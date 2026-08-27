@@ -63,4 +63,19 @@ describe("getKieApiModelId Grok Imagine routing", () => {
       )
     ).toBe("grok-imagine-image-2-0/image-edit");
   });
+
+  it("keeps GPT Image 2 text-to-image when no reference is attached", () => {
+    expect(getKieApiModelId("gpt-image-2-text-to-image", makeInput())).toBe(
+      "gpt-image-2-text-to-image"
+    );
+  });
+
+  it("routes GPT Image 2 to image-to-image when a reference is attached", () => {
+    expect(
+      getKieApiModelId(
+        "gpt-image-2-text-to-image",
+        makeInput({ images: ["https://cdn.example/ref.png"] })
+      )
+    ).toBe("gpt-image-2-image-to-image");
+  });
 });

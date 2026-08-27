@@ -25,6 +25,13 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         quality: "medium",
       };
 
+    case "gpt-image-2-text-to-image":
+    case "gpt-image-2-image-to-image":
+      return {
+        aspect_ratio: "auto",
+        resolution: "1K",
+      };
+
     // Z-Image model
     case "z-image":
       return {
@@ -261,6 +268,7 @@ export function getKieImageInputKey(modelId: string): string {
   if (modelId === "nano-banana-pro") return "image_input";
   if (modelId === "seedream/4.5-edit") return "image_urls";
   if (modelId === "gpt-image/1.5-image-to-image") return "input_urls";
+  if (modelId === "gpt-image-2-text-to-image" || modelId === "gpt-image-2-image-to-image") return "input_urls";
   // Flux-2 I2I models use input_urls
   if (modelId === "flux-2/pro-image-to-image" || modelId === "flux-2/flex-image-to-image") return "input_urls";
   // Wan 2.7 Image / Image Pro use input_urls
@@ -439,6 +447,7 @@ export function getKieApiModelId(modelId: string, input?: GenerationInput): stri
   if (input && generationHasImages(input)) {
     if (modelId === "grok-imagine-image-2-0/text-to-image") return "grok-imagine-image-2-0/image-edit";
     if (modelId === "grok-imagine/text-to-image") return "grok-imagine/image-to-image";
+    if (modelId === "gpt-image-2-text-to-image") return "gpt-image-2-image-to-image";
   }
   return modelId;
 }
@@ -477,8 +486,8 @@ export async function submitKieTask(
     Object.assign(inputParams, input.parameters);
   }
 
-  // GPT Image 1.5 does NOT support 'size' parameter
-  if (modelId.startsWith("gpt-image/1.5")) {
+  // GPT Image 1.5 / 2 do NOT support 'size' parameter
+  if (modelId.startsWith("gpt-image/1.5") || modelId.startsWith("gpt-image-2")) {
     delete inputParams.size;
   }
 
