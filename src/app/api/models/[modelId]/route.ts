@@ -878,6 +878,21 @@ function getKieSchema(modelId: string): ExtractedSchema {
         { name: "input_urls", type: "image", required: false, label: "Image", isArray: true },
       ],
     },
+    "wan/2-7-image-pro": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio (used when no reference images are provided)", enum: ["1:1", "16:9", "4:3", "21:9", "3:4", "9:16", "8:1", "1:8"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution. 4K is available for text-to-image in standard mode only.", enum: ["1K", "2K", "4K"], default: "2K" },
+        { name: "n", type: "integer", description: "Number of images to generate. 1-4 in standard mode (default 4); 1-12 when sequential mode is on.", default: 4, minimum: 1, maximum: 12 },
+        { name: "enable_sequential", type: "boolean", description: "Generate a sequential group of related images", default: false },
+        { name: "thinking_mode", type: "boolean", description: "Enable thinking mode. Only available in standard mode with no reference images.", default: false },
+        { name: "watermark", type: "boolean", description: "Add a watermark to the output", default: false },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
     "grok-imagine/text-to-image": {
       parameters: [
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["2:3", "3:2", "1:1", "16:9", "9:16"], default: "1:1" },
@@ -887,6 +902,21 @@ function getKieSchema(modelId: string): ExtractedSchema {
     },
     "grok-imagine/image-to-image": {
       parameters: [],
+      inputs: [
+        { name: "prompt", type: "text", required: false, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "grok-imagine-image-2-0/text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2", "16:9", "9:16"], default: "1:1" },
+      ],
+      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+    },
+    "grok-imagine-image-2-0/image-edit": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2", "16:9", "9:16", "auto"], default: "auto" },
+      ],
       inputs: [
         { name: "prompt", type: "text", required: false, label: "Prompt" },
         { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },

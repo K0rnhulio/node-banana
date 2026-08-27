@@ -220,6 +220,15 @@ const KIE_MODELS: ProviderModel[] = [
     pageUrl: "https://docs.kie.ai/market/wan/2-7-image",
   },
   {
+    id: "wan/2-7-image-pro",
+    name: "Wan 2.7 Image Pro",
+    description: "Wan 2.7 Image Pro generation and editing via Kie.ai. Supports up to 9 reference images, 4K text-to-image, sequential group mode, and thinking mode.",
+    provider: "kie",
+    capabilities: ["text-to-image", "image-to-image"],
+    coverImage: undefined,
+    pageUrl: "https://docs.kie.ai/market/wan/2-7-image-pro",
+  },
+  {
     id: "grok-imagine/text-to-image",
     name: "Grok Imagine",
     description: "Grok Imagine text-to-image generation via Kie.ai.",
@@ -236,6 +245,24 @@ const KIE_MODELS: ProviderModel[] = [
     capabilities: ["image-to-image"],
     coverImage: undefined,
     pageUrl: "https://kie.ai/grok-imagine",
+  },
+  {
+    id: "grok-imagine-image-2-0/text-to-image",
+    name: "Grok Imagine 2.0",
+    description: "Grok Imagine Image 2.0 text-to-image generation via Kie.ai.",
+    provider: "kie",
+    capabilities: ["text-to-image"],
+    coverImage: undefined,
+    pageUrl: "https://docs.kie.ai/market/grok-imagine-image-2-0/text-to-image",
+  },
+  {
+    id: "grok-imagine-image-2-0/image-edit",
+    name: "Grok Imagine 2.0 Edit",
+    description: "Grok Imagine Image 2.0 image editing via Kie.ai. Supports up to 5 reference images.",
+    provider: "kie",
+    capabilities: ["image-to-image"],
+    coverImage: undefined,
+    pageUrl: "https://docs.kie.ai/market/grok-imagine-image-2-0/image-to-image",
   },
   // ============ Video Models ============
   {
