@@ -202,6 +202,8 @@ export interface NanoBananaNodeData extends BaseNodeData {
   selectedModel?: SelectedModel; // Multi-provider model selection (optional for backward compat)
   useGoogleSearch: boolean; // Only available for Nano Banana Pro and Nano Banana 2
   useImageSearch: boolean; // Only available for Nano Banana 2
+  /** How many images to generate in parallel on one Run. Clamped to 1–4. */
+  generationCount?: number;
   parameters?: Record<string, unknown>; // Model-specific parameters for external providers
   fallbackParameters?: Record<string, unknown>; // Parameters for fallback model
   inputSchema?: ModelInputDef[]; // Model's input schema for dynamic handles

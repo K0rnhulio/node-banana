@@ -20,6 +20,12 @@ export interface NanoBananaOptions {
   useStoredFallback?: boolean;
 }
 
+function clampGenerationCount(value: unknown): number {
+  const n = typeof value === "number" ? value : parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(1, Math.min(4, Math.round(n)));
+}
+
 export async function executeNanoBanana(
   ctx: NodeExecutionContext,
   options: NanoBananaOptions = {}
@@ -87,6 +93,8 @@ export async function executeNanoBanana(
   // Capture promptText as a string for use inside the closure.
   // Image-only models (e.g. Topaz upscale) have no prompt.
   const finalPrompt: string = promptText ?? "";
+  const generationCount = clampGenerationCount(nodeData.generationCount);
+  const isParallel = generationCount > 1;
 
   updateNodeData(node.id, {
     inputImages: images,
@@ -146,10 +154,12 @@ export async function executeNanoBanana(
           if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
         }
 
-        updateNodeData(node.id, {
-          status: "error",
-          error: errorMessage,
-        });
+        if (!isParallel) {
+          updateNodeData(node.id, {
+            status: "error",
+            error: errorMessage,
+          });
+        }
         throw new Error(errorMessage);
       }
 
@@ -168,17 +178,19 @@ export async function executeNanoBanana(
         });
 
         if (!result.success) {
-          updateNodeData(node.id, {
-            status: "error",
-            error: result.error || "Generation failed",
-          });
+          if (!isParallel) {
+            updateNodeData(node.id, {
+              status: "error",
+              error: result.error || "Generation failed",
+            });
+          }
           throw new Error(result.error || "Generation failed");
         }
       }
 
       if (result.success && result.image) {
         const timestamp = Date.now();
-        const imageId = `${timestamp}`;
+        const imageId = `${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
 
         // Save to global history
         addToGlobalHistory({
@@ -189,7 +201,9 @@ export async function executeNanoBanana(
           model: nodeData.model,
         });
 
-        // Add to node's carousel history
+        // Add to node's carousel history from the latest store snapshot so
+        // parallel runs don't overwrite each other.
+        const currentData = (getFreshNode(node.id)?.data || node.data) as NanoBananaNodeData;
         const newHistoryItem = {
           id: imageId,
           timestamp,
@@ -197,11 +211,11 @@ export async function executeNanoBanana(
           aspectRatio: nodeData.aspectRatio,
           model: nodeData.model,
         };
-        const updatedHistory = [newHistoryItem, ...(nodeData.imageHistory || [])].slice(0, 50);
+        const updatedHistory = [newHistoryItem, ...(currentData.imageHistory || [])].slice(0, 50);
 
         updateNodeData(node.id, {
           outputImage: result.image,
-          status: "complete",
+          ...(isParallel ? {} : { status: "complete" as const }),
           error: null,
           imageHistory: updatedHistory,
           selectedHistoryIndex: 0,
@@ -261,10 +275,12 @@ export async function executeNanoBanana(
           trackSaveGeneration(imageId, savePromise);
         }
       } else {
-        updateNodeData(node.id, {
-          status: "error",
-          error: result.error || "Generation failed",
-        });
+        if (!isParallel) {
+          updateNodeData(node.id, {
+            status: "error",
+            error: result.error || "Generation failed",
+          });
+        }
         throw new Error(result.error || "Generation failed");
       }
     } catch (error) {
@@ -282,10 +298,12 @@ export async function executeNanoBanana(
         errorMessage = error.message;
       }
 
-      updateNodeData(node.id, {
-        status: "error",
-        error: errorMessage,
-      });
+      if (!isParallel) {
+        updateNodeData(node.id, {
+          status: "error",
+          error: errorMessage,
+        });
+      }
       throw new Error(errorMessage);
     }
   };
@@ -297,7 +315,7 @@ export async function executeNanoBanana(
     displayName: nodeData.model,
   };
 
-  await runWithFallback({
+  const fallbackOptions = {
     nodeId: node.id,
     primary: primaryModel,
     fallback: nodeData.fallbackModel,
@@ -305,5 +323,38 @@ export async function executeNanoBanana(
     updateNodeData,
     runOnce,
     clearOutput: { outputImage: null },
+  };
+
+  if (!isParallel) {
+    await runWithFallback(fallbackOptions);
+    return;
+  }
+
+  const results = await Promise.allSettled(
+    Array.from({ length: generationCount }, () => runWithFallback(fallbackOptions))
+  );
+
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+
+  const successCount = results.filter((r) => r.status === "fulfilled").length;
+  const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+
+  if (successCount === 0) {
+    const message =
+      firstError?.reason instanceof Error ? firstError.reason.message : "Generation failed";
+    updateNodeData(node.id, {
+      status: "error",
+      error: message,
+    });
+    throw new Error(message);
+  }
+
+  updateNodeData(node.id, {
+    status: "complete",
+    error: successCount < generationCount
+      ? `${generationCount - successCount} of ${generationCount} generations failed`
+      : null,
   });
 }

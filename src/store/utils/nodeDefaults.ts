@@ -200,6 +200,7 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
         selectedModel,
         useGoogleSearch,
         useImageSearch,
+        generationCount: 1,
         status: "idle",
         error: null,
         imageHistory: [],

@@ -138,6 +138,32 @@ describe("executeNanoBanana", () => {
     );
   });
 
+  it("should fire generationCount requests in parallel", async () => {
+    const node = makeNode({ generationCount: 3 });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, image: "data:image/png;base64,a" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, image: "data:image/png;base64,b" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, image: "data:image/png;base64,c" }),
+      });
+
+    const ctx = makeCtx(node);
+    await executeNanoBanana(ctx);
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(ctx.updateNodeData).toHaveBeenCalledWith(
+      "gen-1",
+      expect.objectContaining({ status: "complete" })
+    );
+  });
+
   it("should set loading status before API call", async () => {
     const node = makeNode();
     mockFetch.mockResolvedValueOnce({

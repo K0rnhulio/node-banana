@@ -286,6 +286,14 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
     [id, updateNodeData]
   );
 
+  const handleGenerationCountChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const generationCount = Math.max(1, Math.min(4, parseInt(e.target.value, 10) || 1));
+      updateNodeData(id, { generationCount });
+    },
+    [id, updateNodeData]
+  );
+
   // Handle inputs loaded from schema
   const handleInputsLoaded = useCallback(
     (inputs: ModelInputDef[]) => {
@@ -445,6 +453,21 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
           {/* Primary tab content */}
           {settingsTab === "primary" && (
             <>
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] text-neutral-400 shrink-0">Count</label>
+                <select
+                  value={nodeData.generationCount ?? 1}
+                  onChange={handleGenerationCountChange}
+                  title="How many images to generate in parallel"
+                  className="nodrag nopan flex-1 min-w-0 text-[11px] py-1 px-2 bg-[#1a1a1a] rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-600 text-white"
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {/* Gemini-specific controls */}
               {isGeminiProvider && currentModelId && (() => {
                 const controls: React.ReactNode[] = [

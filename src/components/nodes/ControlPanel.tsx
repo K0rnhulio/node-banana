@@ -316,6 +316,23 @@ function GenerateImageControls({ node }: { node: Node }) {
           </div>
         </div>
 
+        <div>
+          <label className="block text-xs font-medium text-neutral-300 mb-1">Count</label>
+          <select
+            value={nodeData.generationCount ?? 1}
+            onChange={(e) => {
+              const generationCount = Math.max(1, Math.min(4, parseInt(e.target.value, 10) || 1));
+              updateNodeData(node.id, { generationCount });
+            }}
+            title="How many images to generate in parallel"
+            className="nodrag nopan w-full px-2 py-1 text-xs bg-neutral-700 border border-neutral-600 rounded text-neutral-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {[1, 2, 3, 4].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Gemini-specific controls */}
         {isGeminiProvider && (
           <>
