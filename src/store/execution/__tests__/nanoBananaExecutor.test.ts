@@ -110,6 +110,34 @@ describe("executeNanoBanana", () => {
     });
   });
 
+  it("should allow image-only models with no prompt", async () => {
+    const node = makeNode({
+      selectedModel: { provider: "kie", modelId: "topaz/image-upscale", displayName: "Topaz Image Upscale" },
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true, image: "data:image/png;base64,upscaled" }),
+    });
+
+    const ctx = makeCtx(node, {
+      getConnectedInputs: vi.fn().mockReturnValue({
+        images: ["data:image/png;base64,src"],
+        videos: [],
+        audio: [],
+        text: null,
+        dynamicInputs: { image_url: "data:image/png;base64,src" },
+        easeCurve: null,
+      }),
+    });
+
+    await executeNanoBanana(ctx);
+
+    expect(ctx.updateNodeData).toHaveBeenCalledWith(
+      "gen-1",
+      expect.objectContaining({ status: "complete", outputImage: "data:image/png;base64,upscaled" })
+    );
+  });
+
   it("should set loading status before API call", async () => {
     const node = makeNode();
     mockFetch.mockResolvedValueOnce({

@@ -231,9 +231,9 @@ const KIE_MODELS: ProviderModel[] = [
   {
     id: "grok-imagine/text-to-image",
     name: "Grok Imagine",
-    description: "Grok Imagine text-to-image generation via Kie.ai.",
+    description: "Grok Imagine text-to-image generation via Kie.ai. Connect a reference image to run image-to-image.",
     provider: "kie",
-    capabilities: ["text-to-image"],
+    capabilities: ["text-to-image", "image-to-image"],
     coverImage: undefined,
     pageUrl: "https://kie.ai/grok-imagine",
   },
@@ -249,9 +249,9 @@ const KIE_MODELS: ProviderModel[] = [
   {
     id: "grok-imagine-image-2-0/text-to-image",
     name: "Grok Imagine 2.0",
-    description: "Grok Imagine Image 2.0 text-to-image generation via Kie.ai.",
+    description: "Grok Imagine Image 2.0 via Kie.ai. Connect a reference image to run image-to-image (Edit).",
     provider: "kie",
-    capabilities: ["text-to-image"],
+    capabilities: ["text-to-image", "image-to-image"],
     coverImage: undefined,
     pageUrl: "https://docs.kie.ai/market/grok-imagine-image-2-0/text-to-image",
   },
@@ -263,6 +263,15 @@ const KIE_MODELS: ProviderModel[] = [
     capabilities: ["image-to-image"],
     coverImage: undefined,
     pageUrl: "https://docs.kie.ai/market/grok-imagine-image-2-0/image-to-image",
+  },
+  {
+    id: "topaz/image-upscale",
+    name: "Topaz Image Upscale",
+    description: "Topaz AI image upscaling via Kie.ai. Supports 1x, 2x, and 4x. JPEG, PNG, or WebP up to 10MB.",
+    provider: "kie",
+    capabilities: ["image-to-image"],
+    coverImage: undefined,
+    pageUrl: "https://docs.kie.ai/market/topaz/image-upscale",
   },
   // ============ Video Models ============
   {

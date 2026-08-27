@@ -216,7 +216,8 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         resolution: "1080p",
       };
 
-    // Topaz video upscale
+    // Topaz upscale
+    case "topaz/image-upscale":
     case "topaz/video-upscale":
       return {
         upscale_factor: "2",
@@ -276,6 +277,8 @@ export function getKieImageInputKey(modelId: string): string {
   if (modelId === "kling-2.6/motion-control") return "input_urls";
   // Wan 2.7 I2V uses first_frame_url (singular)
   if (modelId === "wan/2-7-image-to-video") return "first_frame_url";
+  // Topaz image upscale uses image_url (singular)
+  if (modelId === "topaz/image-upscale") return "image_url";
   // Topaz video upscale uses video_url (singular)
   if (modelId === "topaz/video-upscale") return "video_url";
   // Veo 3 models use imageUrls
@@ -411,11 +414,32 @@ export async function uploadMediaToKie(
 /** @deprecated Use uploadMediaToKie instead */
 export const uploadImageToKie = uploadMediaToKie;
 
+function generationHasImages(input: GenerationInput): boolean {
+  if (input.images && input.images.length > 0) return true;
+  if (!input.dynamicInputs) return false;
+  return Object.entries(input.dynamicInputs).some(([key, value]) => {
+    if (!/image|input_urls/i.test(key)) return false;
+    if (typeof value === "string" && value.length > 0) return true;
+    return Array.isArray(value) && value.some((item) => typeof item === "string" && item.length > 0);
+  });
+}
+
+function isArrayMediaKey(key: string): boolean {
+  return key.endsWith("_urls") || key.endsWith("Urls") || key === "image_input";
+}
+
 // Map internal model IDs to the API model value expected by Kie
 // Seedance models use a base ID without the capability suffix
-function getKieApiModelId(modelId: string): string {
+export function getKieApiModelId(modelId: string, input?: GenerationInput): string {
   if (modelId.startsWith("bytedance/seedance-2/")) return "bytedance/seedance-2";
   if (modelId.startsWith("bytedance/seedance-2-fast/")) return "bytedance/seedance-2-fast";
+  // Grok Imagine T2I and I2I are separate Kie model IDs. The generate node
+  // always exposes an image handle, so route to the edit/I2I endpoint when a
+  // reference image is actually connected.
+  if (input && generationHasImages(input)) {
+    if (modelId === "grok-imagine-image-2-0/text-to-image") return "grok-imagine-image-2-0/image-edit";
+    if (modelId === "grok-imagine/text-to-image") return "grok-imagine/image-to-image";
+  }
   return modelId;
 }
 
@@ -493,6 +517,9 @@ export async function submitKieTask(
             }
             handledImageKeys.add(key);
           }
+        } else if (typeof value === "string" && isArrayMediaKey(key)) {
+          inputParams[key] = [value];
+          if (/image|input_urls/i.test(key)) handledImageKeys.add(key);
         } else {
           inputParams[key] = value;
         }
@@ -582,6 +609,11 @@ export async function submitKieTask(
     return { taskId, isVeo: true };
   }
 
+  // Topaz upscalers have no prompt field
+  if (modelId.startsWith("topaz/")) {
+    delete inputParams.prompt;
+  }
+
   // ElevenLabs models use "text" instead of "prompt"
   if (modelId.startsWith("elevenlabs/")) {
     if (inputParams.prompt) {
@@ -591,7 +623,10 @@ export async function submitKieTask(
   }
 
   // All remaining Kie models use the standard createTask endpoint
-  const apiModelId = getKieApiModelId(modelId);
+  const apiModelId = getKieApiModelId(modelId, input);
+  if (apiModelId !== modelId) {
+    console.log(`[API:${requestId}] Routed ${modelId} → ${apiModelId} (reference image attached)`);
+  }
   const requestBody: Record<string, unknown> = {
     model: apiModelId,
     input: inputParams,

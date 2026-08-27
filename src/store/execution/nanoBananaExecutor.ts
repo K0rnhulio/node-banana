@@ -72,7 +72,11 @@ export async function executeNanoBanana(
     promptText = Array.isArray(raw) ? (raw as string[])[0] ?? null : null;
   }
 
-  if (!promptText) {
+  const hasImageInputs = images.length > 0 || Object.keys(dynamicInputs).some(
+    (key) => key.includes("image") || key.includes("frame")
+  );
+
+  if (!promptText && !hasImageInputs) {
     updateNodeData(node.id, {
       status: "error",
       error: "Missing text input",
@@ -80,8 +84,9 @@ export async function executeNanoBanana(
     throw new Error("Missing text input");
   }
 
-  // Capture promptText as a definitely-non-null string for use inside the closure.
-  const finalPrompt: string = promptText;
+  // Capture promptText as a string for use inside the closure.
+  // Image-only models (e.g. Topaz upscale) have no prompt.
+  const finalPrompt: string = promptText ?? "";
 
   updateNodeData(node.id, {
     inputImages: images,

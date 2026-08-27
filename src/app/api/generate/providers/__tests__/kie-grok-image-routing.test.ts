@@ -1,0 +1,66 @@
+import { describe, it, expect } from "vitest";
+import { getKieApiModelId } from "../kie";
+import type { GenerationInput } from "@/lib/providers/types";
+
+function makeInput(overrides: Partial<GenerationInput> = {}): GenerationInput {
+  return {
+    model: {
+      id: "grok-imagine-image-2-0/text-to-image",
+      name: "Grok Imagine 2.0",
+      description: null,
+      provider: "kie",
+      capabilities: ["text-to-image", "image-to-image"],
+    },
+    prompt: "edit the photo",
+    images: [],
+    parameters: {},
+    ...overrides,
+  };
+}
+
+describe("getKieApiModelId Grok Imagine routing", () => {
+  it("keeps text-to-image when no reference is attached", () => {
+    expect(getKieApiModelId("grok-imagine-image-2-0/text-to-image", makeInput())).toBe(
+      "grok-imagine-image-2-0/text-to-image"
+    );
+    expect(getKieApiModelId("grok-imagine/text-to-image", makeInput())).toBe(
+      "grok-imagine/text-to-image"
+    );
+  });
+
+  it("routes Grok Imagine 2.0 to image-edit when images[] is set", () => {
+    expect(
+      getKieApiModelId(
+        "grok-imagine-image-2-0/text-to-image",
+        makeInput({ images: ["data:image/png;base64,abc"] })
+      )
+    ).toBe("grok-imagine-image-2-0/image-edit");
+  });
+
+  it("routes Grok Imagine 2.0 to image-edit when dynamicInputs carries image_urls", () => {
+    expect(
+      getKieApiModelId(
+        "grok-imagine-image-2-0/text-to-image",
+        makeInput({ dynamicInputs: { image_urls: "https://cdn.example/ref.png" } })
+      )
+    ).toBe("grok-imagine-image-2-0/image-edit");
+  });
+
+  it("routes Grok Imagine v1 to image-to-image when a reference is attached", () => {
+    expect(
+      getKieApiModelId(
+        "grok-imagine/text-to-image",
+        makeInput({ images: ["https://cdn.example/ref.png"] })
+      )
+    ).toBe("grok-imagine/image-to-image");
+  });
+
+  it("does not remap an already-selected edit model", () => {
+    expect(
+      getKieApiModelId(
+        "grok-imagine-image-2-0/image-edit",
+        makeInput({ images: ["https://cdn.example/ref.png"] })
+      )
+    ).toBe("grok-imagine-image-2-0/image-edit");
+  });
+});

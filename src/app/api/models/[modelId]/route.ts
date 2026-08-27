@@ -898,7 +898,10 @@ function getKieSchema(modelId: string): ExtractedSchema {
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["2:3", "3:2", "1:1", "16:9", "9:16"], default: "1:1" },
         { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0 },
       ],
-      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
     },
     "grok-imagine/image-to-image": {
       parameters: [],
@@ -911,7 +914,10 @@ function getKieSchema(modelId: string): ExtractedSchema {
       parameters: [
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2", "16:9", "9:16"], default: "1:1" },
       ],
-      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
     },
     "grok-imagine-image-2-0/image-edit": {
       parameters: [
@@ -920,6 +926,14 @@ function getKieSchema(modelId: string): ExtractedSchema {
       inputs: [
         { name: "prompt", type: "text", required: false, label: "Prompt" },
         { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "topaz/image-upscale": {
+      parameters: [
+        { name: "upscale_factor", type: "string", description: "Factor to upscale width and height", enum: ["1", "2", "4"], default: "2" },
+      ],
+      inputs: [
+        { name: "image_url", type: "image", required: true, label: "Image" },
       ],
     },
     // ============ Audio/TTS models ============
