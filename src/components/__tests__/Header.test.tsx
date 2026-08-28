@@ -75,14 +75,14 @@ describe("Header", () => {
   describe("Basic Rendering", () => {
     it("should render the app title", () => {
       render(<Header />);
-      expect(screen.getByText("Node Banana")).toBeInTheDocument();
+      expect(screen.getByText("Candora Art")).toBeInTheDocument();
     });
 
-    it("should render the banana icon", () => {
+    it("should render the Candora Art icon", () => {
       render(<Header />);
-      const icon = screen.getByAltText("Banana");
+      const icon = screen.getByAltText("Candora Art");
       expect(icon).toBeInTheDocument();
-      expect(icon).toHaveAttribute("src", "/banana_icon.png");
+      expect(icon).toHaveAttribute("src", "/candora-icon.png");
     });
 
     it("should render 'Made by Willie' link", () => {

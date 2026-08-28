@@ -69,9 +69,9 @@ export function FTUXModal({ onComplete, onStartTutorial }: FTUXModalProps) {
           <div className="px-8 pt-8 pb-4 border-b border-neutral-700/50 shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src="/banana_icon.png" alt="" className="w-6 h-6" />
+                <img src="/candora-icon.png" alt="" className="w-6 h-6 rounded-md" />
                 <h2 className="text-xl font-medium text-neutral-100">
-                  Welcome to Node Banana
+                  Welcome to Candora Art
                 </h2>
               </div>
               <button

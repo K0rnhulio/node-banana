@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="full" alt="Node Banana" src="public/node-banana.png" />
+<img width="full" alt="Candora Art" src="public/candora-art.jpg" />
 
 ### An Open Visual Workflow Editor for AI APIs
 
@@ -23,7 +23,7 @@ Multi-provider support. Dynamic prompting features. Local, private, MIT, BYOK.
 
 ## Build Complex AI Pipelines Visually
 
-Node Banana is a node-based workflow editor for AI media generation. Drag nodes onto an infinite canvas, connect them with typed handles, and execute pipelines that call AI APIs in dependency order.
+Candora Art is a node-based workflow editor for AI media generation. Drag nodes onto an infinite canvas, connect them with typed handles, and execute pipelines that call AI APIs in dependency order.
 
 - **Build dynamic prompts** with variables, LLM/VLM-powered prompt construction, and reusable prompt chains
 - **Generate workflows from natural language** or choose from preset templates

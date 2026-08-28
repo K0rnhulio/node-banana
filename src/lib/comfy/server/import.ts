@@ -138,7 +138,7 @@ export async function prepareWorkflow(
     }
     if (unsupportedInputs.length > 0) {
       warnings.push(
-        `This Blueprint expects ${unsupportedInputs.join(", ")} to be wired inside ComfyUI. Node Banana cannot supply those, so it will not run as-is.`
+        `This Blueprint expects ${unsupportedInputs.join(", ")} to be wired inside ComfyUI. Candora Art cannot supply those, so it will not run as-is.`
       );
     }
     return {

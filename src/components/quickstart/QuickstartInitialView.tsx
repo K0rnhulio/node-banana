@@ -20,9 +20,9 @@ export function QuickstartInitialView({
         <div className="flex-1 flex flex-col">
           <div className="mb-4">
             <div className="flex items-center gap-2">
-              <img src="/banana_icon.png" alt="" className="w-7 h-7" />
+              <img src="/candora-icon.png" alt="" className="w-7 h-7 rounded-md" />
               <h1 className="text-2xl font-medium text-neutral-100">
-                Node Banana
+                Candora Art
               </h1>
             </div>
           </div>

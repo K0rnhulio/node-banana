@@ -219,9 +219,9 @@ export function Header() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             title="Open welcome screen"
           >
-            <img src="/banana_icon.png" alt="Banana" className="w-6 h-6" />
+            <img src="/candora-icon.png" alt="Candora Art" className="w-6 h-6 rounded-md" />
             <h1 className="text-2xl font-semibold text-neutral-100 tracking-tight">
-              Node Banana
+              Candora Art
             </h1>
           </button>
 

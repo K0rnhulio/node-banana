@@ -359,7 +359,7 @@ function ApiV2Toggle({
       </label>
       <p className="text-[10px] text-neutral-500 mt-1">
         Turn on only if this endpoint serves the Comfy API v2. A stock ComfyUI does not —
-        leave it off and Node Banana drives it directly.
+        leave it off and Candora Art drives it directly.
       </p>
     </div>
   );
