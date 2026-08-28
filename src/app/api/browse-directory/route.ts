@@ -4,6 +4,7 @@ import { promisify } from "util";
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { ensureHostedDataDir, isHostedEnvironment } from "@/lib/hosted";
 
 const execAsync = promisify(exec);
 
@@ -34,11 +35,25 @@ export function normalizeSelectedPath(selectedPath: string, platform: string): s
   return selectedPath;
 }
 
+async function hostedDirectoryResponse() {
+  const path = await ensureHostedDataDir();
+  return NextResponse.json({
+    success: true,
+    cancelled: false,
+    path,
+    hosted: true,
+  });
+}
+
 // GET: Open native directory picker and return the selected path
 export async function GET() {
   const platform = process.platform;
 
   try {
+    if (isHostedEnvironment()) {
+      return await hostedDirectoryResponse();
+    }
+
     let selectedPath: string | null = null;
 
     if (platform === "darwin") {
@@ -122,14 +137,8 @@ if ($result) { Write-Output $result }
           );
           selectedPath = stdout.trim();
         } catch {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                "No supported dialog tool found. Please install zenity or kdialog.",
-            },
-            { status: 500 }
-          );
+          // Headless Linux (Docker, Railway, WSL without a desktop): use server storage.
+          return await hostedDirectoryResponse();
         }
       }
     } else {

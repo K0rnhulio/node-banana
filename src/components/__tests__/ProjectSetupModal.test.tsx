@@ -658,6 +658,36 @@ describe("ProjectSetupModal", () => {
       });
     });
 
+    it("should auto-fill the server folder on hosted deployments", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url === "/api/env-status") {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              gemini: false,
+              hosted: true,
+              defaultProjectDir: "/app/data",
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+      });
+
+      render(
+        <ProjectSetupModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSave={vi.fn()}
+          mode="new"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("/app/data")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Use server folder")).toBeInTheDocument();
+    });
+
     it("should keep selected parent path in input after browse", async () => {
       mockFetch.mockImplementation((url: string) => {
         if (url === "/api/env-status") {

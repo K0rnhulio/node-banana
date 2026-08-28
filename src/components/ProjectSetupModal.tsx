@@ -235,7 +235,19 @@ export function ProjectSetupModal({
       // Fetch env status
       fetch("/api/env-status")
         .then((res) => res.json())
-        .then((data: EnvStatusResponse) => setEnvStatus(data))
+        .then((data: EnvStatusResponse) => {
+          setEnvStatus(data);
+          if (data.hosted && data.defaultProjectDir) {
+            setDirectoryPath((current) => {
+              if (!current.trim()) return data.defaultProjectDir as string;
+              // Ignore leftover Windows paths from a local session when hosted on Linux
+              if (/^[A-Za-z]:[\\/]/.test(current) || current.startsWith("\\\\")) {
+                return data.defaultProjectDir as string;
+              }
+              return current;
+            });
+          }
+        })
         .catch(() => setEnvStatus(null));
     }
   }, [isOpen, mode, workflowName, saveDirectoryPath, useExternalImageStorage, providerSettings, canvasNavigationSettings]);
@@ -483,7 +495,7 @@ export function ProjectSetupModal({
                   type="text"
                   value={directoryPath}
                   onChange={(e) => setDirectoryPath(e.target.value)}
-                  placeholder="/Users/username/projects/my-project"
+                  placeholder={envStatus?.hosted ? (envStatus.defaultProjectDir || "/app/data") : "/Users/username/projects/my-project"}
                   className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-neutral-100 text-sm focus:outline-none focus:border-neutral-500"
                 />
                 <button
@@ -492,11 +504,13 @@ export function ProjectSetupModal({
                   disabled={isBrowsing}
                   className="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 disabled:bg-neutral-700 disabled:opacity-50 text-neutral-200 text-sm rounded-lg transition-colors"
                 >
-                  {isBrowsing ? "..." : "Browse"}
+                  {isBrowsing ? "..." : envStatus?.hosted ? "Use server folder" : "Browse"}
                 </button>
               </div>
               <p className="text-xs text-neutral-400 mt-1">
-                Workflow files and images will be saved here. Subfolders for inputs and generations will be auto-created.
+                {envStatus?.hosted
+                  ? "This Railway/hosted instance has no desktop folder picker. Workflows are saved in a server folder. Files are lost on redeploy unless you mount a volume at NODE_BANANA_DATA_DIR."
+                  : "Workflow files and images will be saved here. Subfolders for inputs and generations will be auto-created."}
               </p>
             </div>
 

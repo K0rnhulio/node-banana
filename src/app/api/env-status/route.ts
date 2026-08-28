@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getHostedDataDir, isHostedEnvironment } from "@/lib/hosted";
 
 export interface EnvStatusResponse {
   gemini: boolean;
@@ -8,10 +9,12 @@ export interface EnvStatusResponse {
   fal: boolean;
   kie: boolean;
   wavespeed: boolean;
+  hosted: boolean;
+  defaultProjectDir: string | null;
 }
 
 export async function GET() {
-  // Check which API keys are configured via environment variables
+  const hosted = isHostedEnvironment();
   const status: EnvStatusResponse = {
     gemini: !!process.env.GEMINI_API_KEY,
     openai: !!process.env.OPENAI_API_KEY,
@@ -20,6 +23,8 @@ export async function GET() {
     fal: !!process.env.FAL_API_KEY,
     kie: !!process.env.KIE_API_KEY,
     wavespeed: !!process.env.WAVESPEED_API_KEY,
+    hosted,
+    defaultProjectDir: hosted ? getHostedDataDir() : null,
   };
 
   return NextResponse.json(status);

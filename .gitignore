@@ -37,6 +37,9 @@ next-env.d.ts
 # renders
 renders/
 
+# hosted / Railway project data
+/data/
+
 # logs
 logs/*.json
 
