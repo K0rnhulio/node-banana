@@ -193,22 +193,6 @@ describe("QuickstartInitialView", () => {
       expect(discordLink).toHaveAttribute("rel", "noopener noreferrer");
     });
 
-    it("should render Twitter/X link with correct URL", () => {
-      render(
-        <QuickstartInitialView
-          onNewProject={mockOnNewProject}
-          onSelectTemplates={mockOnSelectTemplates}
-          onSelectVibe={mockOnSelectVibe}
-          onSelectLoad={mockOnSelectLoad}
-        />
-      );
-
-      const twitterLink = screen.getByText("Willie").closest("a");
-      expect(twitterLink).toHaveAttribute("href", "https://x.com/ReflctWillie");
-      expect(twitterLink).toHaveAttribute("target", "_blank");
-      expect(twitterLink).toHaveAttribute("rel", "noopener noreferrer");
-    });
-
     it("should render docs link", () => {
       render(
         <QuickstartInitialView

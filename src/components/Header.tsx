@@ -219,7 +219,7 @@ export function Header() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             title="Open welcome screen"
           >
-            <img src="/candora-icon.png" alt="Candora Art" className="w-6 h-6 rounded-md" />
+            <img src="/candora-icon.png?v=2" alt="Candora Art" className="w-6 h-6 rounded-md" />
             <h1 className="text-2xl font-semibold text-neutral-100 tracking-tight">
               Candora Art
             </h1>
@@ -380,15 +380,6 @@ export function Header() {
               "Not saved"
             )}
           </span>
-          <span className="text-neutral-500">·</span>
-          <a
-            href="https://x.com/ReflctWillie"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-neutral-400 hover:text-neutral-200 transition-colors"
-          >
-            Made by Willie
-          </a>
           <span className="text-neutral-500">·</span>
           <button
             onClick={() => setShortcutsDialogOpen(true)}

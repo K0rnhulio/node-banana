@@ -82,13 +82,7 @@ describe("Header", () => {
       render(<Header />);
       const icon = screen.getByAltText("Candora Art");
       expect(icon).toBeInTheDocument();
-      expect(icon).toHaveAttribute("src", "/candora-icon.png");
-    });
-
-    it("should render 'Made by Willie' link", () => {
-      render(<Header />);
-      const link = screen.getByText("Made by Willie");
-      expect(link).toHaveAttribute("href", "https://x.com/ReflctWillie");
+      expect(icon).toHaveAttribute("src", "/candora-icon.png?v=2");
     });
 
     it("should render Discord support link", () => {
