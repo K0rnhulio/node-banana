@@ -360,6 +360,8 @@ describe("GenerateImageNode", () => {
 
       expect(screen.getByTitle("Previous image")).toBeInTheDocument();
       expect(screen.getByTitle("Next image")).toBeInTheDocument();
+      expect(screen.getByTitle("Previous image").className).toContain("nodrag");
+      expect(screen.getByTitle("Next image").className).toContain("nodrag");
     });
 
     it("should show current position in carousel", () => {

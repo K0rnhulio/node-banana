@@ -34,6 +34,7 @@ import { logger } from "@/utils/logger";
 import { externalizeWorkflowMedia, hydrateWorkflowMedia } from "@/utils/mediaStorage";
 import { EditOperation, applyEditOperations as executeEditOps } from "@/lib/chat/editOperations";
 import { findNearestFreePosition } from "@/utils/spatialLayout";
+import { cacheGeneratedImage, renameCachedGeneratedImage } from "@/store/generationImageCache";
 import {
   loadSaveConfigs,
   saveSaveConfig,
@@ -1585,6 +1586,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
       }));
     },
     appendGeneratedImage: (nodeId: string, item: CarouselImageItem) => {
+      if (item.image) cacheGeneratedImage(item.id, item.image);
       set((state) => ({
         nodes: state.nodes.map((n) => {
           if (n.id !== nodeId) return n;
@@ -1605,6 +1607,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
       }));
     },
     renameGeneratedImageId: (nodeId: string, oldId: string, newId: string) => {
+      renameCachedGeneratedImage(oldId, newId);
       set((state) => ({
         nodes: state.nodes.map((n) => {
           if (n.id !== nodeId) return n;

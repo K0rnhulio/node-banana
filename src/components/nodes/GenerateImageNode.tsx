@@ -6,7 +6,7 @@ import { BaseNode } from "./BaseNode";
 import { ModelParameters } from "./ModelParameters";
 import { useWorkflowStore, saveNanoBananaDefaults, useProviderApiKeys } from "@/store/workflowStore";
 import { deduplicatedFetch } from "@/utils/deduplicatedFetch";
-import { NanoBananaNodeData, AspectRatio, Resolution, MODEL_DISPLAY_NAMES, ProviderType, SelectedModel, ModelInputDef, GEMINI_IMAGE_MODELS, ModelType } from "@/types";
+import { NanoBananaNodeData, CarouselImageItem, AspectRatio, Resolution, MODEL_DISPLAY_NAMES, ProviderType, SelectedModel, ModelInputDef, GEMINI_IMAGE_MODELS, ModelType } from "@/types";
 import { ProviderModel, ModelCapability } from "@/lib/providers/types";
 import { ModelSearchDialog } from "@/components/modals/ModelSearchDialog";
 import { getImageDimensions } from "@/utils/nodeDimensions";
@@ -23,6 +23,7 @@ import { useLoadGenerationById } from "@/hooks/useLoadGenerationById";
 import { useGenerationCarousel } from "@/hooks/useGenerationCarousel";
 import { useErrorToast } from "@/hooks/useErrorToast";
 import { useAutoResizeOnMedia } from "@/hooks/useAutoResizeOnMedia";
+import { getCachedGeneratedImage } from "@/store/generationImageCache";
 
 /** Reorder items so they read column-first in a row-based CSS grid.
  *  e.g. [1,2,3,4,5,6,7,8] with 2 cols → [1,5,2,6,3,7,4,8] */
@@ -334,6 +335,15 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
   }, [id, regenerateNode]);
 
   const loadImageById = useLoadGenerationById("image", "Image");
+  const getStoredCarouselImage = useCallback((item: CarouselImageItem) => {
+    return item.image || getCachedGeneratedImage(item.id) || null;
+  }, []);
+  const buildCarouselUpdate = useCallback((image: string, newIndex: number) => ({
+    outputImage: image,
+    selectedHistoryIndex: newIndex,
+    status: "idle" as const,
+    error: null,
+  }), []);
 
   const {
     isLoading: isLoadingCarouselImage,
@@ -344,14 +354,28 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
     history: nodeData.imageHistory,
     currentIndex: nodeData.selectedHistoryIndex,
     loadFn: loadImageById,
-    getStoredMedia: (item) => item.image,
-    buildUpdate: (image, newIndex) => ({
-      outputImage: image,
-      selectedHistoryIndex: newIndex,
-      status: "idle",
-      error: null,
-    }),
+    getStoredMedia: getStoredCarouselImage,
+    buildUpdate: buildCarouselUpdate,
   });
+
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const stopNodeDrag = useCallback((e: React.PointerEvent | React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+  const handleCarouselPointerDown = useCallback((e: React.PointerEvent) => {
+    swipeStartRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+  const handleCarouselPointerUp = useCallback((e: React.PointerEvent) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    e.stopPropagation();
+    if (dx < 0) handleCarouselNext();
+    else handleCarouselPrevious();
+  }, [handleCarouselNext, handleCarouselPrevious]);
 
   // Handle model selection from browse dialog
   const handleBrowseModelSelect = useCallback((model: ProviderModel) => {
@@ -627,8 +651,10 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
       <HandleLabel label="Image" side="source" color="var(--handle-color-image)" visible={showLabels} />
 
       <div
-        className="relative w-full h-full min-h-0 overflow-hidden rounded-lg"
+        className={`relative w-full h-full min-h-0 overflow-hidden rounded-lg ${hasCarouselImages ? "nodrag nopan nowheel" : ""}`}
         data-tutorial="generate-output-area"
+        onPointerDown={hasCarouselImages ? handleCarouselPointerDown : undefined}
+        onPointerUp={hasCarouselImages ? handleCarouselPointerUp : undefined}
       >
         {/* Preview area */}
         {nodeData.outputImage ? (
@@ -711,10 +737,13 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
               </div>
             )}
             {/* Download + Clear buttons */}
-            <div className="absolute top-1 right-1 flex items-center gap-0.5">
+            <div className="absolute top-1 right-1 flex items-center gap-0.5 z-20 nodrag nopan nowheel">
               <button
+                type="button"
+                onPointerDown={stopNodeDrag}
+                onMouseDown={stopNodeDrag}
                 onClick={() => downloadMedia(nodeData.outputImage!, "image").catch(() => {})}
-                className="w-5 h-5 bg-neutral-900/80 hover:bg-neutral-700 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+                className="nodrag nopan nowheel w-5 h-5 bg-neutral-900/80 hover:bg-neutral-700 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
                 title="Download image"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -722,8 +751,11 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
                 </svg>
               </button>
               <button
+                type="button"
+                onPointerDown={stopNodeDrag}
+                onMouseDown={stopNodeDrag}
                 onClick={handleClearImage}
-                className="w-5 h-5 bg-neutral-900/80 hover:bg-red-600/80 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+                className="nodrag nopan nowheel w-5 h-5 bg-neutral-900/80 hover:bg-red-600/80 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
                 title="Clear image"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -732,29 +764,36 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
               </button>
             </div>
 
-            {/* Carousel controls - overlaid on image bottom */}
+            {/* Carousel controls - overlaid on image bottom. nodrag so React Flow
+                does not steal the click/touch as a node drag. */}
             {hasCarouselImages && (
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 py-1.5 bg-neutral-900/80">
+              <div className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-center gap-2 py-1.5 bg-neutral-900/80 nodrag nopan nowheel pointer-events-auto">
                 <button
-                  onClick={handleCarouselPrevious}
+                  type="button"
+                  onPointerDown={stopNodeDrag}
+                  onMouseDown={stopNodeDrag}
+                  onClick={(e) => { e.stopPropagation(); handleCarouselPrevious(); }}
                   disabled={isLoadingCarouselImage}
-                  className="w-5 h-5 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                  className="nodrag nopan nowheel w-7 h-7 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white/70 hover:text-white transition-colors"
                   title="Previous image"
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-[10px] text-white/70 min-w-[32px] text-center">
+                <span className="text-[10px] text-white/70 min-w-[32px] text-center pointer-events-none">
                   {(nodeData.selectedHistoryIndex || 0) + 1} / {(nodeData.imageHistory || []).length}
                 </span>
                 <button
-                  onClick={handleCarouselNext}
+                  type="button"
+                  onPointerDown={stopNodeDrag}
+                  onMouseDown={stopNodeDrag}
+                  onClick={(e) => { e.stopPropagation(); handleCarouselNext(); }}
                   disabled={isLoadingCarouselImage}
-                  className="w-5 h-5 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                  className="nodrag nopan nowheel w-7 h-7 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-white/70 hover:text-white transition-colors"
                   title="Next image"
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>

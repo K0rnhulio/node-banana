@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { WorkflowNodeData } from "@/types";
+import { cacheGeneratedImage, getCachedGeneratedImage } from "@/store/generationImageCache";
 
 interface HistoryItem {
   id: string;
@@ -35,11 +36,12 @@ export function useGenerationCarousel<T extends HistoryItem>({
 }: UseGenerationCarouselParams<T>) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const [isLoading, setIsLoading] = useState(false);
+  const inFlight = useRef(false);
 
   const navigate = useCallback(
     async (direction: "previous" | "next") => {
       const items = history || [];
-      if (items.length === 0 || isLoading) return;
+      if (items.length === 0 || inFlight.current) return;
 
       const current = currentIndex || 0;
       const newIndex =
@@ -49,22 +51,32 @@ export function useGenerationCarousel<T extends HistoryItem>({
             : current - 1
           : (current + 1) % items.length;
       const item = items[newIndex];
+      if (!item) return;
 
-      const stored = getStoredMedia?.(item);
+      const stored =
+        getStoredMedia?.(item) ||
+        getCachedGeneratedImage(item.id) ||
+        null;
       if (stored) {
+        cacheGeneratedImage(item.id, stored);
         updateNodeData(nodeId, buildUpdate(stored, newIndex));
         return;
       }
 
+      inFlight.current = true;
       setIsLoading(true);
-      const media = await loadFn(item.id);
-      setIsLoading(false);
-
-      if (media) {
-        updateNodeData(nodeId, buildUpdate(media, newIndex));
+      try {
+        const media = await loadFn(item.id);
+        if (media) {
+          cacheGeneratedImage(item.id, media);
+          updateNodeData(nodeId, buildUpdate(media, newIndex));
+        }
+      } finally {
+        inFlight.current = false;
+        setIsLoading(false);
       }
     },
-    [nodeId, history, currentIndex, isLoading, loadFn, buildUpdate, getStoredMedia, updateNodeData]
+    [nodeId, history, currentIndex, loadFn, buildUpdate, getStoredMedia, updateNodeData]
   );
 
   const handlePrevious = useCallback(() => navigate("previous"), [navigate]);
