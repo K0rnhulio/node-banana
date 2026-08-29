@@ -78,4 +78,22 @@ describe("getKieApiModelId Grok Imagine routing", () => {
       )
     ).toBe("gpt-image-2-image-to-image");
   });
+
+  it("routes Qwen Image 3.0 Pro to image-to-image when a reference is attached", () => {
+    expect(getKieApiModelId("qwen3/pro-text-to-image", makeInput())).toBe(
+      "qwen3/pro-text-to-image"
+    );
+    expect(
+      getKieApiModelId(
+        "qwen3/pro-text-to-image",
+        makeInput({ images: ["https://cdn.example/ref.png"] })
+      )
+    ).toBe("qwen3/pro-image-to-image");
+    expect(
+      getKieApiModelId(
+        "qwen3/text-to-image",
+        makeInput({ images: ["https://cdn.example/ref.png"] })
+      )
+    ).toBe("qwen3/image-to-image");
+  });
 });

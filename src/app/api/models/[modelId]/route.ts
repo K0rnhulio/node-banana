@@ -726,6 +726,15 @@ function getKieSchema(modelId: string): ExtractedSchema {
   // Flux-2 aspect ratios (includes auto and additional ratios)
   const flux2AspectRatios = ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "auto"];
   const gptImage2AspectRatios = ["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16", "2:1", "1:2", "3:1", "1:3", "21:9", "9:21"];
+  const qwen3ImageSizes = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
+  const qwen3ImageParams: ModelParameter[] = [
+    { name: "image_size", type: "string", description: "Output image size", enum: qwen3ImageSizes, default: "1:1" },
+    { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K"], default: "1K" },
+    { name: "output_format", type: "string", description: "Output image format", enum: ["png", "jpeg"], default: "png" },
+    { name: "prompt_extend", type: "boolean", description: "Rewrite simple prompts before generation", default: true },
+    { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+    { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+  ];
 
   // Model-specific schemas
   const schemas: Record<string, ExtractedSchema> = {
@@ -788,6 +797,34 @@ function getKieSchema(modelId: string): ExtractedSchema {
       inputs: [
         { name: "prompt", type: "text", required: true, label: "Prompt" },
         { name: "input_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/pro-text-to-image": {
+      parameters: qwen3ImageParams,
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/pro-image-to-image": {
+      parameters: qwen3ImageParams,
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/text-to-image": {
+      parameters: qwen3ImageParams,
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/image-to-image": {
+      parameters: qwen3ImageParams,
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
       ],
     },
     "flux-2/pro-text-to-image": {

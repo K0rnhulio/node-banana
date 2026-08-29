@@ -32,6 +32,19 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         resolution: "1K",
       };
 
+    // Qwen Image 3.0
+    case "qwen3/pro-text-to-image":
+    case "qwen3/pro-image-to-image":
+    case "qwen3/text-to-image":
+    case "qwen3/image-to-image":
+      return {
+        resolution: "1K",
+        image_size: "1:1",
+        output_format: "png",
+        prompt_extend: true,
+        nsfw_checker: false,
+      };
+
     // Z-Image model
     case "z-image":
       return {
@@ -448,6 +461,8 @@ export function getKieApiModelId(modelId: string, input?: GenerationInput): stri
     if (modelId === "grok-imagine-image-2-0/text-to-image") return "grok-imagine-image-2-0/image-edit";
     if (modelId === "grok-imagine/text-to-image") return "grok-imagine/image-to-image";
     if (modelId === "gpt-image-2-text-to-image") return "gpt-image-2-image-to-image";
+    if (modelId === "qwen3/pro-text-to-image") return "qwen3/pro-image-to-image";
+    if (modelId === "qwen3/text-to-image") return "qwen3/image-to-image";
   }
   return modelId;
 }
