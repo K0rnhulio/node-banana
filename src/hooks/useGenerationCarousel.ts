@@ -16,6 +16,8 @@ interface UseGenerationCarouselParams<T extends HistoryItem> {
    * Kept node-specific so each node can write its own output/index fields.
    */
   buildUpdate: (media: string, newIndex: number) => Partial<WorkflowNodeData>;
+  /** Prefer pixels already stored on the history item over a disk load. */
+  getStoredMedia?: (item: T) => string | null | undefined;
 }
 
 /**
@@ -29,6 +31,7 @@ export function useGenerationCarousel<T extends HistoryItem>({
   currentIndex,
   loadFn,
   buildUpdate,
+  getStoredMedia,
 }: UseGenerationCarouselParams<T>) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +50,12 @@ export function useGenerationCarousel<T extends HistoryItem>({
           : (current + 1) % items.length;
       const item = items[newIndex];
 
+      const stored = getStoredMedia?.(item);
+      if (stored) {
+        updateNodeData(nodeId, buildUpdate(stored, newIndex));
+        return;
+      }
+
       setIsLoading(true);
       const media = await loadFn(item.id);
       setIsLoading(false);
@@ -55,7 +64,7 @@ export function useGenerationCarousel<T extends HistoryItem>({
         updateNodeData(nodeId, buildUpdate(media, newIndex));
       }
     },
-    [nodeId, history, currentIndex, isLoading, loadFn, buildUpdate, updateNodeData]
+    [nodeId, history, currentIndex, isLoading, loadFn, buildUpdate, getStoredMedia, updateNodeData]
   );
 
   const handlePrevious = useCallback(() => navigate("previous"), [navigate]);

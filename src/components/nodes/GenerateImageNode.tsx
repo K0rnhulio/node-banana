@@ -344,6 +344,7 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
     history: nodeData.imageHistory,
     currentIndex: nodeData.selectedHistoryIndex,
     loadFn: loadImageById,
+    getStoredMedia: (item) => item.image,
     buildUpdate: (image, newIndex) => ({
       outputImage: image,
       selectedHistoryIndex: newIndex,

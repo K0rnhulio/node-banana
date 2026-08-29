@@ -18,6 +18,7 @@ import {
   SplitGridNodeData,
   WorkflowNodeData,
   ImageHistoryItem,
+  CarouselImageItem,
   NodeGroup,
   GroupColor,
   ProviderType,
@@ -1580,6 +1581,41 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
             ? { ...n, data: { ...n.data, videos: [video, ...((n.data as OutputGalleryNodeData).videos || [])] } as WorkflowNodeData }
             : n
         ) as WorkflowNode[],
+        hasUnsavedChanges: true,
+      }));
+    },
+    appendGeneratedImage: (nodeId: string, item: CarouselImageItem) => {
+      set((state) => ({
+        nodes: state.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const data = n.data as NanoBananaNodeData;
+          const updatedHistory = [item, ...(data.imageHistory || [])].slice(0, 50);
+          return {
+            ...n,
+            data: {
+              ...data,
+              outputImage: item.image ?? data.outputImage,
+              error: null,
+              imageHistory: updatedHistory,
+              selectedHistoryIndex: 0,
+            } as WorkflowNodeData,
+          };
+        }) as WorkflowNode[],
+        hasUnsavedChanges: true,
+      }));
+    },
+    renameGeneratedImageId: (nodeId: string, oldId: string, newId: string) => {
+      set((state) => ({
+        nodes: state.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const data = n.data as NanoBananaNodeData;
+          const hist = data.imageHistory || [];
+          const idx = hist.findIndex((h) => h.id === oldId);
+          if (idx === -1) return n;
+          const next = [...hist];
+          next[idx] = { ...next[idx], id: newId };
+          return { ...n, data: { ...data, imageHistory: next } as WorkflowNodeData };
+        }) as WorkflowNode[],
         hasUnsavedChanges: true,
       }));
     },

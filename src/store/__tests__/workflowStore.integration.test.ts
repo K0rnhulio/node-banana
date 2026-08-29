@@ -2439,6 +2439,72 @@ describe("workflowStore integration tests", () => {
     });
   });
 
+  describe("Count>1 generated images land on the node", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("keeps all parallel results in imageHistory with pixels", async () => {
+      const mockFetch = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true, image: "data:image/png;base64,one" }),
+          text: () => Promise.resolve(""),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true, image: "data:image/png;base64,two" }),
+          text: () => Promise.resolve(""),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true, image: "data:image/png;base64,three" }),
+          text: () => Promise.resolve(""),
+        });
+      vi.stubGlobal("fetch", mockFetch);
+
+      useWorkflowStore.setState({
+        nodes: [
+          createTestNode("prompt-1", "prompt", { prompt: "a cat" }),
+          createTestNode("nanoBanana-1", "nanoBanana", {
+            aspectRatio: "1:1",
+            resolution: "1K",
+            model: "nano-banana",
+            generationCount: 3,
+            imageHistory: [],
+            selectedHistoryIndex: 0,
+            outputImage: null,
+            status: "idle",
+            error: null,
+          }),
+        ],
+        edges: [
+          createTestEdge("prompt-1", "nanoBanana-1", "text", "text"),
+        ],
+      });
+
+      await useWorkflowStore.getState().executeWorkflow();
+
+      const node = useWorkflowStore.getState().nodes.find((n) => n.id === "nanoBanana-1");
+      const data = node?.data as {
+        imageHistory?: Array<{ image?: string }>;
+        outputImage?: string | null;
+        status?: string;
+      };
+      expect(data.status).toBe("complete");
+      expect(data.imageHistory).toHaveLength(3);
+      const images = (data.imageHistory || []).map((h) => h.image);
+      expect(new Set(images)).toEqual(
+        new Set([
+          "data:image/png;base64,one",
+          "data:image/png;base64,two",
+          "data:image/png;base64,three",
+        ])
+      );
+      expect(images).toContain(data.outputImage);
+    });
+  });
+
   describe("Canvas navigation settings", () => {
     it("updateCanvasNavigationSettings updates store state", () => {
       const store = useWorkflowStore.getState();

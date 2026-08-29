@@ -11,6 +11,7 @@ import type {
   WorkflowNodeData,
   ProviderSettings,
   ImageHistoryItem,
+  CarouselImageItem,
 } from "@/types";
 import type { ConnectedInputs } from "@/store/utils/connectedInputs";
 
@@ -48,6 +49,13 @@ export interface NodeExecutionContext {
   trackSaveGeneration: (key: string, promise: Promise<void>) => void;
   appendOutputGalleryImage: (targetId: string, image: string) => void;
   appendOutputGalleryVideo: (targetId: string, video: string) => void;
+  /**
+   * Atomically prepend a generated image onto a nanoBanana node's carousel
+   * and set it as the current output. Safe under parallel Count>1 runs.
+   */
+  appendGeneratedImage: (nodeId: string, item: CarouselImageItem) => void;
+  /** Atomically rename a history item id after disk save returns a new id. */
+  renameGeneratedImageId: (nodeId: string, oldId: string, newId: string) => void;
   /** Rebuilds a splitGrid node's cells from its template when stale; returns true if rebuilt */
   materializeSplitGridCells: (nodeId: string) => boolean;
   get: () => unknown;

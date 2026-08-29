@@ -156,7 +156,9 @@ export interface ImageHistoryItem {
 }
 
 /**
- * Carousel image item for per-node history (IDs only, images stored externally)
+ * Carousel image item for per-node history.
+ * `image` is kept at runtime so the node can flip through results without
+ * waiting on disk. Workflow saves strip it (see mediaStorage).
  */
 export interface CarouselImageItem {
   id: string;
@@ -164,6 +166,8 @@ export interface CarouselImageItem {
   prompt: string;
   aspectRatio: AspectRatio;
   model: ModelType;
+  /** Runtime data URL so the canvas carousel can show this result immediately. */
+  image?: string;
 }
 
 /**
@@ -211,7 +215,7 @@ export interface NanoBananaNodeData extends BaseNodeData {
   _settingsPanelHeight?: number; // Measured settings panel height for reload correction
   status: NodeStatus;
   error: string | null;
-  imageHistory: CarouselImageItem[]; // Carousel history (IDs only)
+  imageHistory: CarouselImageItem[]; // Carousel history (image kept at runtime, stripped on save)
   selectedHistoryIndex: number; // Currently selected image in carousel
   fallbackModel?: SelectedModel; // JSON-compatible with Node Banana Pro
   __usedFallback?: boolean; // Set by runWithFallback on successful fallback

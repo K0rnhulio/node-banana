@@ -117,6 +117,8 @@ function makeCtx(
     trackSaveGeneration: vi.fn(),
     appendOutputGalleryImage: vi.fn(),
     appendOutputGalleryVideo: vi.fn(),
+    appendGeneratedImage: vi.fn(),
+    renameGeneratedImageId: vi.fn(),
     materializeSplitGridCells: vi.fn().mockReturnValue(false),
     get: vi.fn(),
     ...overrides,

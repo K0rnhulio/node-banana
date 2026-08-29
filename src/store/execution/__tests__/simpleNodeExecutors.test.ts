@@ -36,6 +36,8 @@ function makeCtx(
     saveDirectoryPath: null,
     trackSaveGeneration: vi.fn(),
     appendOutputGalleryImage: vi.fn(),
+    appendGeneratedImage: vi.fn(),
+    renameGeneratedImageId: vi.fn(),
     get: vi.fn(),
     ...overrides,
   };

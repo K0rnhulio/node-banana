@@ -379,6 +379,36 @@ describe("GenerateImageNode", () => {
 
       expect(screen.getByText("2 / 3")).toBeInTheDocument();
     });
+
+    it("flips to the next stored image on the node without loading from disk", async () => {
+      render(
+        <TestWrapper>
+          <GenerateImageNode {...createNodeProps({
+            outputImage: "data:image/png;base64,one",
+            imageHistory: [
+              { id: "img1", timestamp: Date.now(), prompt: "test1", aspectRatio: "1:1", model: "nano-banana", image: "data:image/png;base64,one" },
+              { id: "img2", timestamp: Date.now(), prompt: "test2", aspectRatio: "1:1", model: "nano-banana", image: "data:image/png;base64,two" },
+            ],
+            selectedHistoryIndex: 0,
+          })} />
+        </TestWrapper>
+      );
+
+      fireEvent.click(screen.getByTitle("Next image"));
+
+      await waitFor(() => {
+        expect(mockUpdateNodeData).toHaveBeenCalledWith("test-node-1", {
+          outputImage: "data:image/png;base64,two",
+          selectedHistoryIndex: 1,
+          status: "idle",
+          error: null,
+        });
+      });
+      expect(mockFetch).not.toHaveBeenCalledWith(
+        "/api/load-generation",
+        expect.anything()
+      );
+    });
   });
 
   describe("Legacy Data Migration", () => {

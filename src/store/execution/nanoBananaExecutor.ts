@@ -44,6 +44,8 @@ export async function executeNanoBanana(
     generationsPath,
     trackSaveGeneration,
     appendOutputGalleryImage,
+    appendGeneratedImage,
+    renameGeneratedImageId,
   } = ctx;
 
   const { useStoredFallback = false } = options;
@@ -201,25 +203,19 @@ export async function executeNanoBanana(
           model: nodeData.model,
         });
 
-        // Add to node's carousel history from the latest store snapshot so
-        // parallel runs don't overwrite each other.
-        const currentData = (getFreshNode(node.id)?.data || node.data) as NanoBananaNodeData;
-        const newHistoryItem = {
+        // Atomically append this result (with pixels) onto the node so Count>1
+        // runs don't clobber each other and the canvas carousel can flip immediately.
+        appendGeneratedImage(node.id, {
           id: imageId,
           timestamp,
           prompt: finalPrompt,
           aspectRatio: nodeData.aspectRatio,
           model: nodeData.model,
-        };
-        const updatedHistory = [newHistoryItem, ...(currentData.imageHistory || [])].slice(0, 50);
-
-        updateNodeData(node.id, {
-          outputImage: result.image,
-          ...(isParallel ? {} : { status: "complete" as const }),
-          error: null,
-          imageHistory: updatedHistory,
-          selectedHistoryIndex: 0,
+          image: result.image,
         });
+        if (!isParallel) {
+          updateNodeData(node.id, { status: "complete", error: null });
+        }
 
         // Push new image to connected downstream outputGallery nodes (atomic append)
         const edges = getEdges();
@@ -256,16 +252,7 @@ export async function executeNanoBanana(
             .then((res) => res.json())
             .then((saveResult) => {
               if (saveResult.success && saveResult.imageId && saveResult.imageId !== imageId) {
-                const currentNode = getNodes().find((n) => n.id === node.id);
-                if (currentNode) {
-                  const currentData = currentNode.data as NanoBananaNodeData;
-                  const histCopy = [...(currentData.imageHistory || [])];
-                  const entryIndex = histCopy.findIndex((h) => h.id === imageId);
-                  if (entryIndex !== -1) {
-                    histCopy[entryIndex] = { ...histCopy[entryIndex], id: saveResult.imageId };
-                    updateNodeData(node.id, { imageHistory: histCopy });
-                  }
-                }
+                renameGeneratedImageId(node.id, imageId, saveResult.imageId);
               }
             })
             .catch((err) => {

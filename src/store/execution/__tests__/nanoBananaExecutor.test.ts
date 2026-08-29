@@ -73,6 +73,8 @@ function makeCtx(
     saveDirectoryPath: null,
     trackSaveGeneration: vi.fn(),
     appendOutputGalleryImage: vi.fn(),
+    appendGeneratedImage: vi.fn(),
+    renameGeneratedImageId: vi.fn(),
     get: vi.fn().mockReturnValue({
       edges: [],
       nodes: [node],
@@ -132,9 +134,13 @@ describe("executeNanoBanana", () => {
 
     await executeNanoBanana(ctx);
 
+    expect(ctx.appendGeneratedImage).toHaveBeenCalledWith(
+      "gen-1",
+      expect.objectContaining({ image: "data:image/png;base64,upscaled" })
+    );
     expect(ctx.updateNodeData).toHaveBeenCalledWith(
       "gen-1",
-      expect.objectContaining({ status: "complete", outputImage: "data:image/png;base64,upscaled" })
+      expect.objectContaining({ status: "complete" })
     );
   });
 
@@ -158,6 +164,17 @@ describe("executeNanoBanana", () => {
     await executeNanoBanana(ctx);
 
     expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(ctx.appendGeneratedImage).toHaveBeenCalledTimes(3);
+    const appendedImages = (ctx.appendGeneratedImage as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c) => (c[1] as { image: string }).image
+    );
+    expect(new Set(appendedImages)).toEqual(
+      new Set([
+        "data:image/png;base64,a",
+        "data:image/png;base64,b",
+        "data:image/png;base64,c",
+      ])
+    );
     expect(ctx.updateNodeData).toHaveBeenCalledWith(
       "gen-1",
       expect.objectContaining({ status: "complete" })
@@ -216,7 +233,10 @@ describe("executeNanoBanana", () => {
       (c: unknown[]) => (c[1] as Record<string, unknown>).status === "complete"
     );
     expect(completeCall).toBeDefined();
-    expect((completeCall![1] as Record<string, unknown>).outputImage).toBe("data:image/png;base64,result");
+    expect(ctx.appendGeneratedImage).toHaveBeenCalledWith(
+      "gen-1",
+      expect.objectContaining({ image: "data:image/png;base64,result" })
+    );
   });
 
   it("should add to global history on success", async () => {
@@ -437,5 +457,50 @@ describe("executeNanoBanana", () => {
     expect(stampCall).toBeDefined();
     expect((stampCall![1] as Record<string, unknown>).__fallbackModelUsed).toBe("Flux Dev");
     expect((stampCall![1] as Record<string, unknown>).__primaryError).toBe("Primary boom");
+  });
+
+  it("stores the generated image on the history item for canvas carousel", async () => {
+    const node = makeNode();
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true, image: "data:image/png;base64,result" }),
+    });
+
+    const ctx = makeCtx(node);
+    await executeNanoBanana(ctx);
+
+    expect(ctx.appendGeneratedImage).toHaveBeenCalledWith(
+      "gen-1",
+      expect.objectContaining({
+        image: "data:image/png;base64,result",
+        prompt: "test prompt",
+        aspectRatio: "1:1",
+        model: "nano-banana",
+      })
+    );
+  });
+
+  it("renames history item id when save-generation returns a different id", async () => {
+    const node = makeNode();
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, image: "data:image/png;base64,result" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, imageId: "saved-id-9" }),
+      });
+
+    const ctx = makeCtx(node, { generationsPath: "/tmp/gens" });
+    await executeNanoBanana(ctx);
+
+    await vi.waitFor(() => {
+      expect(ctx.renameGeneratedImageId).toHaveBeenCalled();
+    });
+    const [nodeId, oldId, newId] = (ctx.renameGeneratedImageId as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(nodeId).toBe("gen-1");
+    expect(typeof oldId).toBe("string");
+    expect(newId).toBe("saved-id-9");
   });
 });

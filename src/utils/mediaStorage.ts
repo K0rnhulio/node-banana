@@ -247,9 +247,9 @@ async function externalizeNodeMedia(
         }
       }
 
-      // Strip inline image data from imageHistory items (legacy bloat)
+      // Strip inline image data from imageHistory items (runtime bloat).
       // Each history item may carry a full base64 `image` field (~4.5MB each)
-      // The `image` field isn't in the CarouselImageItem type but exists at runtime
+      // so the canvas carousel can flip without disk; persist IDs only.
       let cleanedHistory = d.imageHistory;
       if (d.imageHistory?.length) {
         cleanedHistory = [];
