@@ -137,6 +137,15 @@ async function generateWithOpenAI(
     content = prompt;
   }
 
+  const isReasoningModel = modelId.startsWith("o1") || modelId.startsWith("o3");
+  const requestBody: Record<string, unknown> = {
+    model: modelId,
+    messages: [{ role: "user", content }],
+    ...(isReasoningModel
+      ? { max_completion_tokens: maxTokens }
+      : { temperature, max_tokens: maxTokens }),
+  };
+
   const startTime = Date.now();
   const response = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -144,12 +153,7 @@ async function generateWithOpenAI(
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: modelId,
-      messages: [{ role: "user", content }],
-      temperature,
-      max_tokens: maxTokens,
-    }),
+    body: JSON.stringify(requestBody),
   });
   const duration = Date.now() - startTime;
 

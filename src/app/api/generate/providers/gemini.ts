@@ -17,6 +17,7 @@ export const MODEL_MAP: Record<ModelType, string> = {
   "nano-banana": "gemini-2.5-flash-image",
   "nano-banana-pro": "gemini-3-pro-image-preview",
   "nano-banana-2": "gemini-3.1-flash-image-preview",
+  "nano-banana-2.1": "gemini-3.1-flash-image-preview",
   "nano-banana-2-lite": "gemini-3.1-flash-lite-image",
 };
 
@@ -76,18 +77,18 @@ export async function generateWithGemini(
     };
   }
 
-  // Add resolution for Nano Banana Pro and Nano Banana 2
-  if ((model === "nano-banana-pro" || model === "nano-banana-2") && resolution) {
+  // Add resolution for Nano Banana Pro, Nano Banana 2, and Nano Banana 2.1
+  if ((model === "nano-banana-pro" || model === "nano-banana-2" || model === "nano-banana-2.1") && resolution) {
     if (!config.imageConfig) {
       config.imageConfig = {};
     }
     (config.imageConfig as Record<string, unknown>).imageSize = resolution;
   }
 
-  // Add tools array for Google Search (Nano Banana Pro and Nano Banana 2)
+  // Add tools array for Google Search (Nano Banana Pro, Nano Banana 2, and Nano Banana 2.1)
   const tools = [];
-  if (model === "nano-banana-2" && (useGoogleSearch || useImageSearch)) {
-    // Nano Banana 2 uses searchTypes to enable web and/or image search independently
+  if ((model === "nano-banana-2" || model === "nano-banana-2.1") && (useGoogleSearch || useImageSearch)) {
+    // Nano Banana 2 / 2.1 uses searchTypes to enable web and/or image search independently
     const searchTypes: Record<string, Record<string, never>> = {};
     if (useGoogleSearch) searchTypes.webSearch = {};
     if (useImageSearch) searchTypes.imageSearch = {};

@@ -348,6 +348,26 @@ describe("calculatePredictedCost - nano-banana-2-lite", () => {
   });
 });
 
+describe("calculatePredictedCost - nano-banana-2.1", () => {
+  it("should price nano-banana-2.1 according to resolution", () => {
+    const nodes: WorkflowNode[] = [
+      {
+        id: "1",
+        type: "nanoBanana",
+        position: { x: 0, y: 0 },
+        data: { model: "nano-banana-2.1", resolution: "1K" },
+      },
+    ] as WorkflowNode[];
+
+    const result = calculatePredictedCost(nodes);
+
+    expect(result.totalCost).toBeCloseTo(0.067);
+    expect(result.breakdown).toHaveLength(1);
+    expect(result.breakdown[0].modelId).toBe("nano-banana-2.1");
+    expect(result.breakdown[0].unitCost).toBeCloseTo(0.067);
+  });
+});
+
 describe("GPT Image 2.5 predictions", () => {
   it("reports unknown price instead of inheriting the node's legacy Gemini model price", () => {
     const result = calculatePredictedCost([{

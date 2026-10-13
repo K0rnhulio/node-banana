@@ -238,15 +238,17 @@ function useGenerateControls(nodeId: string, overrides: Record<string, unknown>,
     : null;
   const aspectRatio = (overrides.aspectRatio as AspectRatio | undefined) ?? "1:1";
   const resolution = (overrides.resolution as Resolution | undefined) ?? "1K";
-  const supportsResolution = currentModelId === "nano-banana-pro" || currentModelId === "nano-banana-2";
-  const aspectRatios = currentModelId === "nano-banana-2" ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
-  const resolutions = currentModelId === "nano-banana-2" ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
+  const isNb2Family = currentModelId === "nano-banana-2" || currentModelId === "nano-banana-2.1";
+  const supportsResolution = currentModelId === "nano-banana-pro" || isNb2Family;
+  const aspectRatios = isNb2Family ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
+  const resolutions = isNb2Family ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
 
   const handleGeminiModelChange = useCallback(
     (value: string) => {
       const model = value as ModelType;
-      const nextAspectRatios = model === "nano-banana-2" ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
-      const nextResolutions = model === "nano-banana-2" ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
+      const isNewNb2Family = model === "nano-banana-2" || model === "nano-banana-2.1";
+      const nextAspectRatios = isNewNb2Family ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
+      const nextResolutions = isNewNb2Family ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
       setOverrides(nodeId, {
         ...overrides,
         model,
@@ -311,14 +313,14 @@ function useGenerateControls(nodeId: string, overrides: Record<string, unknown>,
           onChange={(v) => setOverrides(nodeId, { ...overrides, resolution: v })}
         />
       )}
-      {(currentModelId === "nano-banana-pro" || currentModelId === "nano-banana-2") && (
+      {(currentModelId === "nano-banana-pro" || isNb2Family) && (
         <CheckboxField
           label="Google Search"
           checked={Boolean(overrides.useGoogleSearch)}
           onChange={(v) => setOverrides(nodeId, { ...overrides, useGoogleSearch: v })}
         />
       )}
-      {currentModelId === "nano-banana-2" && (
+      {isNb2Family && (
         <CheckboxField
           label="Image Search"
           checked={Boolean(overrides.useImageSearch)}
