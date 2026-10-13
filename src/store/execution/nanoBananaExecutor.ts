@@ -87,16 +87,19 @@ export async function executeNanoBanana(
     promptText = Array.isArray(raw) ? (raw as string[])[0] ?? null : null;
   }
 
-  if (!promptText) {
+  const isImageOnlyModel = nodeData.selectedModel?.modelId === "topaz/image-upscale";
+
+  if (!promptText && (!isImageOnlyModel || images.length === 0)) {
+    const errorMsg = isImageOnlyModel ? "Missing image input" : "Missing text input";
     updateNodeData(node.id, {
       status: "skipped",
-      error: "Missing text input",
+      error: errorMsg,
     });
-    throw new MissingInputError("Missing text input");
+    throw new MissingInputError(errorMsg);
   }
 
   // Capture promptText as a definitely-non-null string for use inside the closure.
-  const finalPrompt: string = promptText;
+  const finalPrompt: string = promptText ?? "";
 
   updateNodeData(node.id, {
     inputImages: images,

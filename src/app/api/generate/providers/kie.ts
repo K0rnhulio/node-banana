@@ -100,6 +100,16 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         n: 4,
       };
 
+    // Wan 2.7 Image Pro
+    case "wan/2-7-image-pro":
+      return {
+        resolution: "2K",
+        n: 4,
+        enable_sequential: false,
+        thinking_mode: false,
+        watermark: false,
+      };
+
     // Grok Imagine image models
     case "grok-imagine/text-to-image":
       return {
@@ -108,6 +118,48 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
 
     case "grok-imagine/image-to-image":
       return {};
+
+    // Grok Imagine Image 2.0
+    case "grok-imagine-image-2-0/text-to-image":
+      return {
+        aspect_ratio: "1:1",
+      };
+
+    case "grok-imagine-image-2-0/image-edit":
+      return {
+        aspect_ratio: "auto",
+      };
+
+    // Qwen Image 3.0
+    case "qwen3/pro-text-to-image":
+    case "qwen3/pro-image-to-image":
+    case "qwen3/text-to-image":
+    case "qwen3/image-to-image":
+      return {
+        resolution: "1K",
+        image_size: "1:1",
+        output_format: "png",
+        prompt_extend: true,
+        nsfw_checker: false,
+      };
+
+    // Topaz Image Upscale
+    case "topaz/image-upscale":
+      return {
+        scale: "2x",
+        output_format: "png",
+      };
+
+    // Ideogram V3
+    case "ideogram/v3-text-to-image":
+    case "ideogram/v3-edit":
+    case "ideogram/v3-remix":
+    case "ideogram/character":
+      return {
+        aspect_ratio: "1:1",
+        rendering_speed: "quality",
+        style: "auto",
+      };
 
     // Seedance 2.0 models
     case "bytedance/seedance-2/text-to-video":
@@ -254,8 +306,16 @@ export function getKieImageInputKey(modelId: string): string {
   if (modelId.startsWith("gpt-image-2")) return "input_urls";
   // Flux-2 I2I models use input_urls
   if (modelId === "flux-2/pro-image-to-image" || modelId === "flux-2/flex-image-to-image") return "input_urls";
-  // Wan 2.7 Image uses input_urls
-  if (modelId === "wan/2-7-image") return "input_urls";
+  // Wan 2.7 Image / Image Pro use input_urls
+  if (modelId === "wan/2-7-image" || modelId === "wan/2-7-image-pro") return "input_urls";
+  // Grok Imagine Image 2.0 edit uses image_urls
+  if (modelId === "grok-imagine-image-2-0/image-edit") return "image_urls";
+  // Topaz image upscale uses image_url
+  if (modelId === "topaz/image-upscale") return "image_url";
+  // Qwen 3 models use image_urls
+  if (modelId.startsWith("qwen3/")) return "image_urls";
+  // Ideogram models use image_urls
+  if (modelId.startsWith("ideogram/")) return "image_urls";
   // Seedance I2V models use first_frame_url (singular)
   if (modelId === "bytedance/seedance-2/image-to-video" || modelId === "bytedance/seedance-2-fast/image-to-video") return "first_frame_url";
   // Kling 2.5 turbo I2V uses singular image_url
@@ -411,6 +471,11 @@ function getKieApiModelId(modelId: string, input?: GenerationInput): string {
   if (input && input.images && input.images.length > 0) {
     if (modelId === "gpt-image-2-text-to-image") return "gpt-image-2-image-to-image";
     if (modelId === "gpt-image-2-5-sunburst-text-to-image") return "gpt-image-2-5-flare-image-to-image";
+    if (modelId === "grok-imagine-image-2-0/text-to-image") return "grok-imagine-image-2-0/image-edit";
+    if (modelId === "grok-imagine/text-to-image") return "grok-imagine/image-to-image";
+    if (modelId === "qwen3/pro-text-to-image") return "qwen3/pro-image-to-image";
+    if (modelId === "qwen3/text-to-image") return "qwen3/image-to-image";
+    if (modelId === "ideogram/v3-text-to-image") return "ideogram/v3-edit";
   }
   return modelId;
 }

@@ -892,6 +892,143 @@ function getKieSchema(modelId: string): ExtractedSchema {
         { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
       ],
     },
+    "wan/2-7-image-pro": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio (used when no reference images are provided)", enum: ["1:1", "16:9", "4:3", "21:9", "3:4", "9:16", "8:1", "1:8"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution. 4K is available for text-to-image in standard mode only.", enum: ["1K", "2K", "4K"], default: "2K" },
+        { name: "n", type: "integer", description: "Number of images to generate. 1-4 in standard mode (default 4); 1-12 when sequential mode is on.", default: 4, minimum: 1, maximum: 12 },
+        { name: "enable_sequential", type: "boolean", description: "Generate a sequential group of related images", default: false },
+        { name: "thinking_mode", type: "boolean", description: "Enable thinking mode. Only available in standard mode with no reference images.", default: false },
+        { name: "watermark", type: "boolean", description: "Add a watermark to the output", default: false },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "grok-imagine-image-2-0/text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2", "16:9", "9:16"], default: "1:1" },
+      ],
+      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+    },
+    "grok-imagine-image-2-0/image-edit": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2", "16:9", "9:16", "auto"], default: "auto" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: false, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/pro-text-to-image": {
+      parameters: [
+        { name: "image_size", type: "string", description: "Output image size", enum: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K"], default: "1K" },
+        { name: "output_format", type: "string", description: "Output image format", enum: ["png", "jpeg"], default: "png" },
+        { name: "prompt_extend", type: "boolean", description: "Rewrite simple prompts before generation", default: true },
+        { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/pro-image-to-image": {
+      parameters: [
+        { name: "image_size", type: "string", description: "Output image size", enum: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K"], default: "1K" },
+        { name: "output_format", type: "string", description: "Output image format", enum: ["png", "jpeg"], default: "png" },
+        { name: "prompt_extend", type: "boolean", description: "Rewrite simple prompts before generation", default: true },
+        { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/text-to-image": {
+      parameters: [
+        { name: "image_size", type: "string", description: "Output image size", enum: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K"], default: "1K" },
+        { name: "output_format", type: "string", description: "Output image format", enum: ["png", "jpeg"], default: "png" },
+        { name: "prompt_extend", type: "boolean", description: "Rewrite simple prompts before generation", default: true },
+        { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "qwen3/image-to-image": {
+      parameters: [
+        { name: "image_size", type: "string", description: "Output image size", enum: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"], default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K"], default: "1K" },
+        { name: "output_format", type: "string", description: "Output image format", enum: ["png", "jpeg"], default: "png" },
+        { name: "prompt_extend", type: "boolean", description: "Rewrite simple prompts before generation", default: true },
+        { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+        { name: "seed", type: "integer", description: "Random seed for reproducibility", minimum: 0, maximum: 2147483647 },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "topaz/image-upscale": {
+      parameters: [
+        { name: "scale", type: "string", description: "Upscale factor", enum: ["1x", "2x", "4x"], default: "2x" },
+        { name: "output_format", type: "string", description: "Output format", enum: ["png", "jpeg"], default: "png" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: false, label: "Prompt" },
+        { name: "image_url", type: "image", required: true, label: "Image" },
+      ],
+    },
+    "ideogram/v3-text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"], default: "1:1" },
+        { name: "rendering_speed", type: "string", description: "Generation speed vs quality", enum: ["quality", "turbo"], default: "quality" },
+        { name: "style", type: "string", description: "Image style", enum: ["auto", "general", "realistic", "design"], default: "auto" },
+        { name: "negative_prompt", type: "string", description: "Content to avoid in the image" },
+      ],
+      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+    },
+    "ideogram/v3-edit": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"], default: "auto" },
+        { name: "rendering_speed", type: "string", description: "Generation speed vs quality", enum: ["quality", "turbo"], default: "quality" },
+        { name: "style", type: "string", description: "Image style", enum: ["auto", "general", "realistic", "design"], default: "auto" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "ideogram/v3-remix": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"], default: "auto" },
+        { name: "rendering_speed", type: "string", description: "Generation speed vs quality", enum: ["quality", "turbo"], default: "quality" },
+        { name: "style", type: "string", description: "Image style", enum: ["auto", "general", "realistic", "design"], default: "auto" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "ideogram/character": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"], default: "1:1" },
+        { name: "rendering_speed", type: "string", description: "Generation speed vs quality", enum: ["quality", "turbo"], default: "quality" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: false, label: "Character Image", isArray: true },
+      ],
+    },
     // ============ Audio/TTS models ============
     "elevenlabs/turbo-v2.5": {
       parameters: [
