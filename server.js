@@ -17,7 +17,14 @@ const dev = process.env.NODE_ENV !== 'production';
 // The APIs read and write local files and spend the provider keys in .env,
 // with no login. Listen on this machine only, unless HOST names another
 // address (HOST=0.0.0.0 opens it to the network; trusted networks only).
-const hostname = process.env.HOST || '127.0.0.1';
+// When running in Railway or other cloud containers, automatically bind to 0.0.0.0 so edge proxies can route traffic.
+const isCloudHost = Boolean(
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_PROJECT_ID ||
+  process.env.RENDER ||
+  process.env.FLY_APP_NAME
+);
+const hostname = process.env.HOST || (isCloudHost ? '0.0.0.0' : '127.0.0.1');
 const port = process.env.PORT || 3000;
 
 // The agent routes (/api/agent/*) run turns on the user's own Claude or ChatGPT
