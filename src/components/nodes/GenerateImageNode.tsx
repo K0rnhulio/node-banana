@@ -335,9 +335,10 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
 
   // Use selectedModel.modelId for Gemini models, fallback to legacy model field
   const currentModelId = isGeminiProvider ? (nodeData.selectedModel?.modelId || nodeData.model) : null;
-  const supportsResolution = currentModelId === "nano-banana-pro" || currentModelId === "nano-banana-2";
-  const aspectRatios = currentModelId === "nano-banana-2" ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
-  const resolutions = currentModelId === "nano-banana-2" ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
+  const isNb2Family = currentModelId === "nano-banana-2" || currentModelId === "nano-banana-2.1";
+  const supportsResolution = currentModelId === "nano-banana-pro" || isNb2Family;
+  const aspectRatios = isNb2Family ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
+  const resolutions = isNb2Family ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
   const hasCarouselImages = (nodeData.imageHistory || []).length > 1;
 
   // Show toast when generation fails
@@ -403,10 +404,10 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
               onChange={handleResolutionChange}
             />
           )}
-          {(currentModelId === "nano-banana-pro" || currentModelId === "nano-banana-2") && (
+          {(currentModelId === "nano-banana-pro" || isNb2Family) && (
             <CheckboxField label="Google Search" checked={nodeData.useGoogleSearch || false} onChange={handleGoogleSearchToggle} />
           )}
-          {currentModelId === "nano-banana-2" && (
+          {isNb2Family && (
             <CheckboxField label="Image Search" checked={nodeData.useImageSearch || false} onChange={handleImageSearchToggle} />
           )}
         </>

@@ -41,8 +41,9 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         quality: "basic",
       };
 
-    // Nano Banana 2 (Kie)
+    // Nano Banana 2 & 2.1 (Kie)
     case "nano-banana-2":
+    case "nano-banana-2.1":
       return {
         aspect_ratio: "auto",
         resolution: "1K",
@@ -237,7 +238,7 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
  */
 export function getKieImageInputKey(modelId: string): string {
   // Model-specific parameter names
-  if (modelId === "nano-banana-2") return "image_input";
+  if (modelId === "nano-banana-2" || modelId === "nano-banana-2.1") return "image_input";
   if (modelId === "nano-banana-pro") return "image_input";
   if (modelId === "seedream/4.5-edit") return "image_urls";
   if (modelId === "gpt-image/1.5-image-to-image") return "input_urls";

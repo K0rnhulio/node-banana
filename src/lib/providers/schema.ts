@@ -775,6 +775,17 @@ function getKieSchema(modelId: string): ExtractedSchema {
         { name: "image_input", type: "image", required: false, label: "Image", isArray: true },
       ],
     },
+    "nano-banana-2.1": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9", "auto"], default: "auto" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K", "4K"], default: "1K" },
+        { name: "output_format", type: "string", description: "Output image format", enum: ["jpg", "png"], default: "jpg" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_input", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
     "google/imagen4": {
       parameters: [
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "3:4", "4:3", "9:16", "16:9"], default: "1:1" },
@@ -1253,6 +1264,15 @@ function getGeminiImageSchema(modelId: string): ExtractedSchema | null {
       inputs: commonInputs,
     },
     "nano-banana-2": {
+      parameters: [
+        { name: "aspectRatio", type: "string", description: "Output aspect ratio", enum: extendedAspectRatios, default: "1:1" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["512", "1K", "2K", "4K"], default: "2K" },
+        { name: "useGoogleSearch", type: "boolean", description: "Enable Google Search grounding", default: false },
+        { name: "useImageSearch", type: "boolean", description: "Enable Image Search grounding", default: false },
+      ],
+      inputs: commonInputs,
+    },
+    "nano-banana-2.1": {
       parameters: [
         { name: "aspectRatio", type: "string", description: "Output aspect ratio", enum: extendedAspectRatios, default: "1:1" },
         { name: "resolution", type: "string", description: "Output resolution", enum: ["512", "1K", "2K", "4K"], default: "2K" },
