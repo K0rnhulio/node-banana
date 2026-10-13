@@ -27,6 +27,15 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         quality: "medium",
       };
 
+    case "gpt-image-2-text-to-image":
+    case "gpt-image-2-image-to-image":
+    case "gpt-image-2-5-sunburst-text-to-image":
+    case "gpt-image-2-5-flare-image-to-image":
+      return {
+        aspect_ratio: "auto",
+        resolution: "1K",
+      };
+
     // Z-Image model
     case "z-image":
       return {
@@ -242,6 +251,7 @@ export function getKieImageInputKey(modelId: string): string {
   if (modelId === "nano-banana-pro") return "image_input";
   if (modelId === "seedream/4.5-edit") return "image_urls";
   if (modelId === "gpt-image/1.5-image-to-image") return "input_urls";
+  if (modelId.startsWith("gpt-image-2")) return "input_urls";
   // Flux-2 I2I models use input_urls
   if (modelId === "flux-2/pro-image-to-image" || modelId === "flux-2/flex-image-to-image") return "input_urls";
   // Wan 2.7 Image uses input_urls
@@ -395,9 +405,13 @@ export const uploadImageToKie = uploadMediaToKie;
 
 // Map internal model IDs to the API model value expected by Kie
 // Seedance models use a base ID without the capability suffix
-function getKieApiModelId(modelId: string): string {
+function getKieApiModelId(modelId: string, input?: GenerationInput): string {
   if (modelId.startsWith("bytedance/seedance-2/")) return "bytedance/seedance-2";
   if (modelId.startsWith("bytedance/seedance-2-fast/")) return "bytedance/seedance-2-fast";
+  if (input && input.images && input.images.length > 0) {
+    if (modelId === "gpt-image-2-text-to-image") return "gpt-image-2-image-to-image";
+    if (modelId === "gpt-image-2-5-sunburst-text-to-image") return "gpt-image-2-5-flare-image-to-image";
+  }
   return modelId;
 }
 
@@ -435,8 +449,8 @@ export async function submitKieTask(
     Object.assign(inputParams, input.parameters);
   }
 
-  // GPT Image 1.5 does NOT support 'size' parameter
-  if (modelId.startsWith("gpt-image/1.5")) {
+  // GPT Image 1.5 / 2 do NOT support 'size' parameter
+  if (modelId.startsWith("gpt-image/1.5") || modelId.startsWith("gpt-image-2")) {
     delete inputParams.size;
   }
 
@@ -573,7 +587,7 @@ export async function submitKieTask(
   }
 
   // All remaining Kie models use the standard createTask endpoint
-  const apiModelId = getKieApiModelId(modelId);
+  const apiModelId = getKieApiModelId(modelId, input);
   const requestBody: Record<string, unknown> = {
     model: apiModelId,
     input: inputParams,

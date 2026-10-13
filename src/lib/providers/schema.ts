@@ -671,6 +671,7 @@ function getKieSchema(modelId: string): ExtractedSchema {
 
   // Flux-2 aspect ratios (includes auto and additional ratios)
   const flux2AspectRatios = ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "auto"];
+  const gptImage2AspectRatios = ["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16", "2:1", "1:2", "3:1", "1:3", "21:9", "9:21"];
 
   // Model-specific schemas
   const schemas: Record<string, ExtractedSchema> = {
@@ -709,6 +710,48 @@ function getKieSchema(modelId: string): ExtractedSchema {
       parameters: [
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "2:3", "3:2"], default: "3:2" },
         { name: "quality", type: "string", description: "Output quality", enum: ["medium", "high"], default: "medium" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "gpt-image-2-text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: gptImage2AspectRatios, default: "auto" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K", "4K"], default: "1K" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "gpt-image-2-image-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: gptImage2AspectRatios, default: "auto" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K", "4K"], default: "1K" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
+    "gpt-image-2-5-sunburst-text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: gptImage2AspectRatios, default: "auto" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K", "4K"], default: "1K" },
+        { name: "background", type: "string", description: "Background type", enum: ["auto", "opaque", "transparent"], default: "auto" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "input_urls", type: "image", required: false, label: "Image", isArray: true },
+      ],
+    },
+    "gpt-image-2-5-flare-image-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: gptImage2AspectRatios, default: "auto" },
+        { name: "resolution", type: "string", description: "Output resolution", enum: ["1K", "2K", "4K"], default: "1K" },
+        { name: "background", type: "string", description: "Background type", enum: ["auto", "opaque", "transparent"], default: "auto" },
       ],
       inputs: [
         { name: "prompt", type: "text", required: true, label: "Prompt" },
