@@ -363,6 +363,45 @@ describe("/api/llm route", () => {
       );
     });
 
+    it("should use max_completion_tokens and omit temperature for reasoning models", async () => {
+      process.env.OPENAI_API_KEY = "test-openai-key";
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            choices: [{ message: { content: "Reasoning response" } }],
+          }),
+      });
+
+      const request = createMockPostRequest({
+        prompt: "Reason about this",
+        provider: "openai",
+        model: "o1",
+        temperature: 0.7,
+        maxTokens: 2048,
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.text).toBe("Reasoning response");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.openai.com/v1/chat/completions",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            model: "o1",
+            messages: [{ role: "user", content: "Reason about this" }],
+            max_completion_tokens: 2048,
+          }),
+        })
+      );
+    });
+
     it("should handle vision input (images + prompt)", async () => {
       process.env.OPENAI_API_KEY = "test-openai-key";
 
