@@ -158,6 +158,15 @@ const KIE_MODELS: ProviderModel[] = [
     pageUrl: "https://docs.kie.ai/market/google/nanobanana2",
   },
   {
+    id: "nano-banana-2.1",
+    name: "Nano Banana 2.1 (Kie)",
+    description: "Google Gemini 3.1 Flash image generation via Kie.ai. Supports text-to-image and image-to-image with resolution control.",
+    provider: "kie",
+    capabilities: ["text-to-image", "image-to-image"],
+    coverImage: undefined,
+    pageUrl: "https://docs.kie.ai/market/google/nanobanana2",
+  },
+  {
     id: "google/imagen4",
     name: "Imagen 4",
     description: "Google Imagen 4 high-quality text-to-image generation via Kie.ai.",
