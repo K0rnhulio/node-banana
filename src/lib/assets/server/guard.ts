@@ -23,7 +23,7 @@
 
 import { NextResponse } from "next/server";
 
-import { AGENT_ALLOWED_HOSTS_ENV, AGENT_LOCAL_SECRET_ENV, checkSameOrigin } from "@/lib/agent/server/sameOrigin";
+import { AGENT_ALLOWED_HOSTS_ENV, AGENT_LOCAL_SECRET_ENV, checkSameOrigin, isHostAllowed } from "@/lib/agent/server/sameOrigin";
 import { logger } from "@/utils/logger";
 
 /** Environment variable that lists extra host names the library may be used from (comma-separated, no ports). */
@@ -53,7 +53,7 @@ export function checkAssetRequest(request: Request): AssetRequestCheck {
     path: pathOf(request),
     reason: libraryReason(result.reason),
   });
-  const unvouched = !serverVouches() && !allowedHosts.includes(hostnameOf(request));
+  const unvouched = !serverVouches() && !isHostAllowed(hostnameOf(request), allowedHosts);
   return { ok: false, reason: unvouched ? LIBRARY_UNVOUCHED_MESSAGE : LIBRARY_GUARD_MESSAGE };
 }
 
@@ -81,13 +81,30 @@ function libraryReason(reason: string): string {
     .replace(/\bthe agent\b/g, "the asset library");
 }
 
+function isCloudHostEnv(): boolean {
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RENDER ||
+    process.env.FLY_APP_NAME
+  );
+}
+
 function libraryAllowedHosts(): string[] {
   const raw = process.env[LIBRARY_ALLOWED_HOSTS_ENV];
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
+  const list: string[] = [];
+  if (raw) {
+    list.push(...raw.split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean));
+  } else if (isCloudHostEnv()) {
+    list.push("*");
+  }
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    list.push(process.env.RAILWAY_PUBLIC_DOMAIN.trim().toLowerCase());
+  }
+  if (process.env.RAILWAY_STATIC_URL) {
+    list.push(process.env.RAILWAY_STATIC_URL.trim().toLowerCase());
+  }
+  return list;
 }
 
 /** server.js and electron/server.cjs set the stamp secret; plain `next dev` / `next start` do not. */

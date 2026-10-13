@@ -50,6 +50,10 @@ afterEach(() => {
   delete process.env[AGENT_LOCAL_SECRET_ENV];
   delete process.env[LIBRARY_ALLOWED_HOSTS_ENV];
   delete process.env[AGENT_ALLOWED_HOSTS_ENV];
+  delete process.env.RAILWAY_ENVIRONMENT;
+  delete process.env.RAILWAY_PROJECT_ID;
+  delete process.env.RAILWAY_PUBLIC_DOMAIN;
+  delete process.env.RAILWAY_STATIC_URL;
   vi.clearAllMocks();
 });
 
@@ -80,6 +84,34 @@ describe("guardAssetRequest: lets through", () => {
     const req = request(
       { host: "studio.lan:3000", origin: "http://studio.lan:3000" },
       { url: "http://studio.lan:3000/api/assets/bulk" },
+    );
+    expect(guardAssetRequest(req)).toBeNull();
+  });
+
+  it("wildcard '*' in NB_LIBRARY_ALLOWED_HOSTS lets any same-origin host through", () => {
+    process.env[LIBRARY_ALLOWED_HOSTS_ENV] = "*";
+    const req = request(
+      { host: "my-node-banana.up.railway.app", origin: "https://my-node-banana.up.railway.app" },
+      { url: "https://my-node-banana.up.railway.app/api/workflow" },
+    );
+    expect(guardAssetRequest(req)).toBeNull();
+  });
+
+  it("a full URL with scheme and port in NB_LIBRARY_ALLOWED_HOSTS", () => {
+    process.env[LIBRARY_ALLOWED_HOSTS_ENV] = "https://custom.domain.com:443/";
+    const req = request(
+      { host: "custom.domain.com", origin: "https://custom.domain.com" },
+      { url: "https://custom.domain.com/api/workflow" },
+    );
+    expect(guardAssetRequest(req)).toBeNull();
+  });
+
+  it("automatically allows hosts in cloud environments (e.g. Railway)", () => {
+    delete process.env[LIBRARY_ALLOWED_HOSTS_ENV];
+    process.env.RAILWAY_ENVIRONMENT = "production";
+    const req = request(
+      { host: "auto-railway.up.railway.app", origin: "https://auto-railway.up.railway.app" },
+      { url: "https://auto-railway.up.railway.app/api/workflow" },
     );
     expect(guardAssetRequest(req)).toBeNull();
   });

@@ -27,6 +27,16 @@ const isCloudHost = Boolean(
 const hostname = process.env.HOST || (isCloudHost ? '0.0.0.0' : '127.0.0.1');
 const port = process.env.PORT || 3000;
 
+if (isCloudHost) {
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL;
+  if (!process.env.NB_LIBRARY_ALLOWED_HOSTS) {
+    process.env.NB_LIBRARY_ALLOWED_HOSTS = railwayDomain ? `${railwayDomain},*` : '*';
+  }
+  if (!process.env.NB_AGENT_ALLOWED_HOSTS) {
+    process.env.NB_AGENT_ALLOWED_HOSTS = railwayDomain ? `${railwayDomain},*` : '*';
+  }
+}
+
 // The agent routes (/api/agent/*) run turns on the user's own Claude or ChatGPT
 // subscription, so only this machine may use them. Stamp requests whose socket
 // really is loopback with a per-process secret; src/lib/agent/server/sameOrigin.ts

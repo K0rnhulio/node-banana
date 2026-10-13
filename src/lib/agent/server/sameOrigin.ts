@@ -106,7 +106,7 @@ export function checkSameOrigin(request: Request, options: SameOriginOptions = {
   }
 
   const hostname = hostnameOf(host);
-  const listed = (options.allowedHosts ?? allowedHostsFromEnv()).includes(hostname);
+  const listed = isHostAllowed(hostname, options.allowedHosts ?? allowedHostsFromEnv());
   if (!listed) {
     if (!isLoopbackHost(hostname)) {
       return {
@@ -218,11 +218,53 @@ function isLoopbackHost(hostname: string): boolean {
   return hostname === "[::1]" || /^\[::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}\]$/.test(hostname);
 }
 
+export function isHostAllowed(hostname: string, allowedHosts: readonly string[]): boolean {
+  const target = hostname.toLowerCase();
+  for (const entry of allowedHosts) {
+    const raw = entry.trim().toLowerCase();
+    if (!raw) continue;
+    if (raw === "*") return true;
+
+    let normalized = raw;
+    try {
+      if (raw.includes("://")) {
+        normalized = new URL(raw).hostname.toLowerCase();
+      } else {
+        const withoutPath = raw.split("/")[0];
+        normalized = withoutPath.split(":")[0];
+      }
+    } catch {
+      normalized = raw;
+    }
+
+    if (normalized === target) return true;
+    if (normalized.startsWith("*.") && target.endsWith(normalized.slice(1))) return true;
+  }
+  return false;
+}
+
+function isCloudHostEnv(): boolean {
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RENDER ||
+    process.env.FLY_APP_NAME
+  );
+}
+
 function allowedHostsFromEnv(): string[] {
   const raw = process.env[AGENT_ALLOWED_HOSTS_ENV];
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
+  const list: string[] = [];
+  if (raw) {
+    list.push(...raw.split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean));
+  } else if (isCloudHostEnv()) {
+    list.push("*");
+  }
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    list.push(process.env.RAILWAY_PUBLIC_DOMAIN.trim().toLowerCase());
+  }
+  if (process.env.RAILWAY_STATIC_URL) {
+    list.push(process.env.RAILWAY_STATIC_URL.trim().toLowerCase());
+  }
+  return list;
 }
