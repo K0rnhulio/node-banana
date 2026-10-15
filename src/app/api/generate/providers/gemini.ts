@@ -18,6 +18,7 @@ export const MODEL_MAP: Record<ModelType, string> = {
   "nano-banana-pro": "gemini-3-pro-image-preview",
   "nano-banana-2": "gemini-3.1-flash-image-preview",
   "nano-banana-2.1": "gemini-3.1-flash-image-preview",
+  "nano-banana-2-1": "gemini-3.1-flash-image-preview",
   "nano-banana-2-lite": "gemini-3.1-flash-lite-image",
 };
 

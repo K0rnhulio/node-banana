@@ -194,13 +194,13 @@ const KIE_MODELS: ProviderModel[] = [
     pageUrl: "https://docs.kie.ai/market/google/nanobanana2",
   },
   {
-    id: "nano-banana-2.1",
-    name: "Nano Banana 2.1 (Kie)",
+    id: "nano-banana-2-1",
+    name: "Nano Banana 2.1",
     description: "Google Gemini 3.1 Flash image generation via Kie.ai. Supports text-to-image and image-to-image with resolution control.",
     provider: "kie",
     capabilities: ["text-to-image", "image-to-image"],
     coverImage: undefined,
-    pageUrl: "https://docs.kie.ai/market/google/nanobanana2",
+    pageUrl: "https://kie.ai/nano-banana-2-1",
   },
   {
     id: "google/imagen4",
@@ -667,7 +667,7 @@ const GEMINI_IMAGE_MODELS: ProviderModel[] = [
     pricing: { type: "per-run", amount: 0.067, currency: "USD" },
   },
   {
-    id: "nano-banana-2.1",
+    id: "nano-banana-2-1",
     name: "Nano Banana 2.1",
     description: "Latest high-efficiency image generation with Gemini 3.1 Flash. Supports resolution control (512/1K/2K/4K), Google Search grounding, and up to 10 reference images.",
     provider: "gemini",

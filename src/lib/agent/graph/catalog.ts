@@ -143,6 +143,13 @@ const IMAGE_MODEL_OPTIONS: Record<ModelType, Omit<ImageModelSpec, "id" | "label"
     imageSearch: true,
     note: "Gemini 3.1 Flash Image (Preview): efficient, 512-4K, extra aspect ratios (1:4, 1:8, 4:1, 8:1), Google and image search.",
   },
+  "nano-banana-2-1": {
+    aspectRatios: EXTENDED_ASPECT_RATIOS,
+    resolutions: ["512", "1K", "2K", "4K"],
+    googleSearch: true,
+    imageSearch: true,
+    note: "Gemini 3.1 Flash Image (Preview): efficient, 512-4K, extra aspect ratios (1:4, 1:8, 4:1, 8:1), Google and image search.",
+  },
   "nano-banana-2-lite": {
     aspectRatios: BASE_ASPECT_RATIOS,
     resolutions: [],

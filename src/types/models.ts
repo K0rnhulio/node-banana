@@ -26,7 +26,7 @@ export type AspectRatio =
 export type Resolution = "512" | "1K" | "2K" | "4K";
 
 // Image Generation Model Options
-export type ModelType = "nano-banana" | "nano-banana-pro" | "nano-banana-2" | "nano-banana-2.1" | "nano-banana-2-lite";
+export type ModelType = "nano-banana" | "nano-banana-pro" | "nano-banana-2" | "nano-banana-2.1" | "nano-banana-2-1" | "nano-banana-2-lite";
 
 // Display names for image generation models
 export const MODEL_DISPLAY_NAMES: Record<ModelType, string> = {
@@ -34,13 +34,14 @@ export const MODEL_DISPLAY_NAMES: Record<ModelType, string> = {
   "nano-banana-pro": "Nano Banana Pro",
   "nano-banana-2": "Nano Banana 2",
   "nano-banana-2.1": "Nano Banana 2.1",
+  "nano-banana-2-1": "Nano Banana 2.1",
   "nano-banana-2-lite": "Nano Banana 2 Lite",
 };
 
 export const GEMINI_IMAGE_MODELS: ReadonlyArray<{ value: ModelType; label: string }> = [
   { value: "nano-banana", label: MODEL_DISPLAY_NAMES["nano-banana"] },
   { value: "nano-banana-2", label: MODEL_DISPLAY_NAMES["nano-banana-2"] },
-  { value: "nano-banana-2.1", label: MODEL_DISPLAY_NAMES["nano-banana-2.1"] },
+  { value: "nano-banana-2-1", label: MODEL_DISPLAY_NAMES["nano-banana-2-1"] },
   { value: "nano-banana-2-lite", label: MODEL_DISPLAY_NAMES["nano-banana-2-lite"] },
   { value: "nano-banana-pro", label: MODEL_DISPLAY_NAMES["nano-banana-pro"] },
 ];

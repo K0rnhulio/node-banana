@@ -53,6 +53,7 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
     // Nano Banana 2 & 2.1 (Kie)
     case "nano-banana-2":
     case "nano-banana-2.1":
+    case "nano-banana-2-1":
       return {
         aspect_ratio: "auto",
         resolution: "1K",
@@ -299,7 +300,7 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
  */
 export function getKieImageInputKey(modelId: string): string {
   // Model-specific parameter names
-  if (modelId === "nano-banana-2" || modelId === "nano-banana-2.1") return "image_input";
+  if (modelId === "nano-banana-2" || modelId === "nano-banana-2.1" || modelId === "nano-banana-2-1") return "image_input";
   if (modelId === "nano-banana-pro") return "image_input";
   if (modelId === "seedream/4.5-edit") return "image_urls";
   if (modelId === "gpt-image/1.5-image-to-image") return "input_urls";
@@ -466,6 +467,7 @@ export const uploadImageToKie = uploadMediaToKie;
 // Map internal model IDs to the API model value expected by Kie
 // Seedance models use a base ID without the capability suffix
 function getKieApiModelId(modelId: string, input?: GenerationInput): string {
+  if (modelId === "nano-banana-2.1" || modelId === "nano-banana-2-1") return "nano-banana-2-1";
   if (modelId.startsWith("bytedance/seedance-2/")) return "bytedance/seedance-2";
   if (modelId.startsWith("bytedance/seedance-2-fast/")) return "bytedance/seedance-2-fast";
   if (input && input.images && input.images.length > 0) {
