@@ -108,9 +108,24 @@ export async function executeNanoBanana(
     error: null,
   });
 
-  // Inner runOnce: performs the actual fetch/process/history work for a given model.
-  // Extracted so runWithFallback can invoke it twice (primary, then fallback) if needed.
-  const runOnce = async (modelToUse: SelectedModel, parametersOverride?: Record<string, unknown>): Promise<void> => {
+  let completedCount = 0;
+  let failedCount = 0;
+  let lastError = "";
+
+  let updateChain: Promise<unknown> = Promise.resolve();
+  const serializeUpdate = <T>(fn: () => Promise<T> | T): Promise<T> => {
+    const next = updateChain.then(fn, fn);
+    updateChain = next.then(() => {}, () => {});
+    return next as Promise<T>;
+  };
+
+  const runSingleGeneration = async (
+    modelToUse: SelectedModel,
+    parametersOverride: Record<string, unknown> | undefined,
+    itemIndex: number,
+    totalCount: number,
+    fallbackMeta?: { usedFallback: boolean; fallbackModelUsed: string; primaryError: string }
+  ): Promise<void> => {
     const provider = modelToUse.provider;
     const headers = buildGenerateHeaders(provider, providerSettings);
 
@@ -134,10 +149,12 @@ export async function executeNanoBanana(
     };
 
     // Final guard: assert that prompt is a string before sending to API
-    if (typeof requestPayload.prompt !== 'string') {
+    if (typeof requestPayload.prompt !== "string") {
       const errorMsg = `Internal error: prompt is ${typeof requestPayload.prompt}, expected string`;
-      console.error('[nanoBanana]', errorMsg);
-      updateNodeData(node.id, { status: 'error', error: errorMsg });
+      console.error("[nanoBanana]", errorMsg);
+      if (totalCount === 1) {
+        updateNodeData(node.id, { status: "error", error: errorMsg });
+      }
       throw new Error(errorMsg);
     }
 
@@ -159,10 +176,12 @@ export async function executeNanoBanana(
           if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
         }
 
-        updateNodeData(node.id, {
-          status: "error",
-          error: errorMessage,
-        });
+        if (totalCount === 1) {
+          updateNodeData(node.id, {
+            status: "error",
+            error: errorMessage,
+          });
+        }
         throw new Error(errorMessage);
       }
 
@@ -181,17 +200,19 @@ export async function executeNanoBanana(
         });
 
         if (!result.success) {
-          updateNodeData(node.id, {
-            status: "error",
-            error: result.error || "Generation failed",
-          });
+          if (totalCount === 1) {
+            updateNodeData(node.id, {
+              status: "error",
+              error: result.error || "Generation failed",
+            });
+          }
           throw new Error(result.error || "Generation failed");
         }
       }
 
       if (result.success && result.image) {
         const timestamp = Date.now();
-        const imageId = `${timestamp}`;
+        const imageId = `${timestamp}-${itemIndex}-${Math.random().toString(36).substring(2, 8)}`;
 
         const generation: ImageGenerationMetadata | undefined = provider === "openai" ? result.generation : undefined;
         // The model that ran. The legacy `model` field only ever names a Gemini
@@ -257,82 +278,97 @@ export async function executeNanoBanana(
           ...(generation ? { generation } : {}),
           ...(ctx.batch ? { batch: ctx.batch } : {}),
         };
-        const currentFresh = getFreshNode(node.id);
-        const currentData = (currentFresh?.data || node.data) as NanoBananaNodeData;
-        const currentHistory = currentData.imageHistory || [];
-        const updatedHistory = [newHistoryItem, ...currentHistory].slice(0, 50);
 
-        updateNodeData(node.id, {
-          outputImage: result.image,
-          status: "complete",
-          error: null,
-          ...(generationsPath || recorded ? { imageHistory: updatedHistory, selectedHistoryIndex: 0 } : {}),
-        });
+        await serializeUpdate(() => {
+          completedCount++;
+          const isAllDone = completedCount + failedCount === totalCount;
 
-        // Push new image to connected downstream outputGallery nodes (atomic append)
-        const edges = getEdges();
-        const nodes = getNodes();
-        edges
-          .filter((e) => e.source === node.id)
-          .forEach((e) => {
-            const target = nodes.find((n) => n.id === e.target);
-            if (target?.type === "outputGallery") {
-              appendOutputGalleryImage(target.id, result.image);
-            }
+          const currentFresh = getFreshNode(node.id);
+          const currentData = (currentFresh?.data || node.data) as NanoBananaNodeData;
+          const currentHistory = currentData.imageHistory || [];
+          const updatedHistory = [newHistoryItem, ...currentHistory].slice(0, 50);
+
+          updateNodeData(node.id, {
+            outputImage: result.image,
+            status: isAllDone ? "complete" : "loading",
+            error: null,
+            ...(fallbackMeta
+              ? {
+                  __usedFallback: fallbackMeta.usedFallback,
+                  __fallbackModelUsed: fallbackMeta.fallbackModelUsed,
+                  __primaryError: fallbackMeta.primaryError,
+                }
+              : {}),
+            ...(generationsPath || recorded ? { imageHistory: updatedHistory, selectedHistoryIndex: 0 } : {}),
           });
 
-        // Track cost
-        if (runCost !== null) {
-          addIncurredCost(runCost);
-        }
+          // Push new image to connected downstream outputGallery nodes (atomic append)
+          const edges = getEdges();
+          const nodes = getNodes();
+          edges
+            .filter((e) => e.source === node.id)
+            .forEach((e) => {
+              const target = nodes.find((n) => n.id === e.target);
+              if (target?.type === "outputGallery") {
+                appendOutputGalleryImage(target.id, result.image);
+              }
+            });
 
-        // The save to the generations folder: a project's only save without
-        // the asset library, and its fallback when a recording fails
-        const saveToFolder = generationsPath
-          ? () =>
-              fetch("/api/save-generation", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  directoryPath: generationsPath,
-                  image: result.image,
-                  prompt: finalPrompt,
-                  imageId,
-                }),
-              })
-                .then((res) => res.json())
-                .then((saveResult) => {
-                  if (saveResult.success && saveResult.imageId && saveResult.imageId !== imageId) {
-                    const currentNode = getNodes().find((n) => n.id === node.id);
-                    if (currentNode) {
-                      const currentData = currentNode.data as NanoBananaNodeData;
-                      const histCopy = [...(currentData.imageHistory || [])];
-                      const entryIndex = histCopy.findIndex((h) => h.id === imageId);
-                      if (entryIndex !== -1) {
-                        histCopy[entryIndex] = { ...histCopy[entryIndex], id: saveResult.imageId };
-                        updateNodeData(node.id, { imageHistory: histCopy });
+          // Track cost
+          if (runCost !== null) {
+            addIncurredCost(runCost);
+          }
+
+          // The save to the generations folder: a project's only save without
+          // the asset library, and its fallback when a recording fails
+          const saveToFolder = generationsPath
+            ? () =>
+                fetch("/api/save-generation", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    directoryPath: generationsPath,
+                    image: result.image,
+                    prompt: finalPrompt,
+                    imageId,
+                  }),
+                })
+                  .then((res) => res.json())
+                  .then((saveResult) => {
+                    if (saveResult.success && saveResult.imageId && saveResult.imageId !== imageId) {
+                      const currentNode = getNodes().find((n) => n.id === node.id);
+                      if (currentNode) {
+                        const currentData = currentNode.data as NanoBananaNodeData;
+                        const histCopy = [...(currentData.imageHistory || [])];
+                        const entryIndex = histCopy.findIndex((h) => h.id === imageId);
+                        if (entryIndex !== -1) {
+                          histCopy[entryIndex] = { ...histCopy[entryIndex], id: saveResult.imageId };
+                          updateNodeData(node.id, { imageHistory: histCopy });
+                        }
                       }
                     }
-                  }
-                })
-                .catch((err) => {
-                  console.error("Failed to save generation:", err);
-                })
-          : null;
+                  })
+                  .catch((err) => {
+                    console.error("Failed to save generation:", err);
+                  })
+            : null;
 
-        if (recorded) {
-          // The recorder writes a project's generations into its folder; the
-          // carousel entry then takes the file's name, as a save there always did.
-          followRecording(ctx, "imageHistory", imageId, recorded, saveToFolder);
-        } else if (saveToFolder) {
-          // No asset library: auto-save to the generations folder
-          trackSaveGeneration(imageId, saveToFolder());
-        }
-      } else {
-        updateNodeData(node.id, {
-          status: "error",
-          error: result.error || "Generation failed",
+          if (recorded) {
+            // The recorder writes a project's generations into its folder; the
+            // carousel entry then takes the file's name, as a save there always did.
+            followRecording(ctx, "imageHistory", imageId, recorded, saveToFolder);
+          } else if (saveToFolder) {
+            // No asset library: auto-save to the generations folder
+            trackSaveGeneration(imageId, saveToFolder());
+          }
         });
+      } else {
+        if (totalCount === 1) {
+          updateNodeData(node.id, {
+            status: "error",
+            error: result.error || "Generation failed",
+          });
+        }
         throw new Error(result.error || "Generation failed");
       }
     } catch (error) {
@@ -350,10 +386,12 @@ export async function executeNanoBanana(
         errorMessage = error.message;
       }
 
-      updateNodeData(node.id, {
-        status: "error",
-        error: errorMessage,
-      });
+      if (totalCount === 1) {
+        updateNodeData(node.id, {
+          status: "error",
+          error: errorMessage,
+        });
+      }
       throw new Error(errorMessage);
     }
   };
@@ -367,16 +405,94 @@ export async function executeNanoBanana(
 
   const batchCount = Math.max(1, Math.min(10, nodeData.batchCount ?? 1));
 
-  for (let i = 0; i < batchCount; i++) {
-    if (signal?.aborted) break;
+  if (batchCount === 1) {
     await runWithFallback({
       nodeId: node.id,
       primary: primaryModel,
       fallback: nodeData.fallbackModel,
       fallbackParameters: nodeData.fallbackParameters,
       updateNodeData,
-      runOnce,
+      runOnce: (modelToUse, paramsOverride) => runSingleGeneration(modelToUse, paramsOverride, 0, 1),
       clearOutput: { outputImage: null },
     });
+    return;
+  }
+
+  // Parallel batch generation: generate all images concurrently at the same time
+  const runBatchItem = async (index: number): Promise<void> => {
+    try {
+      await runSingleGeneration(primaryModel, undefined, index, batchCount);
+      return;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      if (signal?.aborted) return;
+
+      const primaryErrMsg = err instanceof Error ? err.message : String(err);
+
+      // Check if fallback model is configured and different from primary
+      const hasFallback =
+        nodeData.fallbackModel &&
+        (nodeData.fallbackModel.provider !== primaryModel.provider ||
+          nodeData.fallbackModel.modelId !== primaryModel.modelId);
+
+      if (hasFallback && nodeData.fallbackModel) {
+        try {
+          await runSingleGeneration(
+            nodeData.fallbackModel,
+            nodeData.fallbackParameters,
+            index,
+            batchCount,
+            {
+              usedFallback: true,
+              fallbackModelUsed: nodeData.fallbackModel.displayName,
+              primaryError: primaryErrMsg,
+            }
+          );
+          return;
+        } catch (fallbackErr) {
+          if (fallbackErr instanceof DOMException && fallbackErr.name === "AbortError") throw fallbackErr;
+          const fallbackErrMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          const combined = `Primary failed: ${primaryErrMsg}. Fallback failed: ${fallbackErrMsg}`;
+          await serializeUpdate(() => {
+            failedCount++;
+            lastError = combined;
+            const isAllDone = completedCount + failedCount === batchCount;
+            if (isAllDone) {
+              if (completedCount === 0) {
+                updateNodeData(node.id, { status: "error", error: lastError });
+              } else {
+                updateNodeData(node.id, { status: "complete", error: null });
+              }
+            }
+          });
+          return;
+        }
+      }
+
+      await serializeUpdate(() => {
+        failedCount++;
+        lastError = primaryErrMsg;
+        const isAllDone = completedCount + failedCount === batchCount;
+        if (isAllDone) {
+          if (completedCount === 0) {
+            updateNodeData(node.id, { status: "error", error: lastError });
+          } else {
+            updateNodeData(node.id, { status: "complete", error: null });
+          }
+        }
+      });
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: batchCount }, (_, index) => runBatchItem(index))
+  );
+
+  if (completedCount === 0) {
+    updateNodeData(node.id, {
+      status: "error",
+      error: lastError || "Generation failed",
+    });
+    throw new Error(lastError || "Generation failed");
   }
 }

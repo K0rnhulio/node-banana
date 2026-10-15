@@ -477,4 +477,113 @@ describe("batch generation on node", () => {
     expect(currentHistory).toHaveLength(3);
     expect(ctx.addIncurredCost).toHaveBeenCalledTimes(3);
   });
+
+  it("generates all batch images concurrently in parallel", async () => {
+    const node = makeNode({ batchCount: 4 });
+    let activeCalls = 0;
+    let maxConcurrent = 0;
+
+    mockFetch.mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("save-generation")) {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+      activeCalls++;
+      maxConcurrent = Math.max(maxConcurrent, activeCalls);
+      // Simulate async processing delay
+      await new Promise((r) => setTimeout(r, 15));
+      activeCalls--;
+      return { ok: true, json: async () => ({ success: true, image: "data:image/png;base64,parallel-img" }) };
+    });
+
+    let currentHistory: any[] = [];
+    const ctx = makeCtx(node, {
+      generationsPath: "/proj/generations",
+      getFreshNode: vi.fn().mockImplementation(() => ({
+        ...node,
+        data: {
+          ...node.data,
+          imageHistory: currentHistory,
+        },
+      })),
+      updateNodeData: vi.fn().mockImplementation((_id, data) => {
+        if (data.imageHistory) {
+          currentHistory = data.imageHistory;
+        }
+      }),
+    });
+
+    await executeNanoBanana(ctx);
+
+    // All 4 requests were in flight simultaneously
+    expect(maxConcurrent).toBe(4);
+    expect(currentHistory).toHaveLength(4);
+    expect(ctx.addIncurredCost).toHaveBeenCalledTimes(4);
+  });
+
+  it("completes successfully when at least one parallel batch item succeeds", async () => {
+    const node = makeNode({ batchCount: 3 });
+    let callIndex = 0;
+
+    mockFetch.mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("save-generation")) {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+      callIndex++;
+      const idx = callIndex;
+      await new Promise((r) => setTimeout(r, 10));
+      if (idx === 2) {
+        return { ok: false, status: 500, text: () => Promise.resolve('{"error": "Temporary flake"}') };
+      }
+      return { ok: true, json: async () => ({ success: true, image: `data:image/png;base64,img${idx}` }) };
+    });
+
+    let currentHistory: any[] = [];
+    let finalStatus: string | null = null;
+    const ctx = makeCtx(node, {
+      generationsPath: "/proj/generations",
+      getFreshNode: vi.fn().mockImplementation(() => ({
+        ...node,
+        data: {
+          ...node.data,
+          imageHistory: currentHistory,
+        },
+      })),
+      updateNodeData: vi.fn().mockImplementation((_id, data) => {
+        if (data.imageHistory) {
+          currentHistory = data.imageHistory;
+        }
+        if (data.status) {
+          finalStatus = data.status;
+        }
+      }),
+    });
+
+    await executeNanoBanana(ctx);
+
+    expect(currentHistory).toHaveLength(2);
+    expect(finalStatus).toBe("complete");
+    expect(ctx.addIncurredCost).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws and sets status to error when all parallel batch items fail", async () => {
+    const node = makeNode({ batchCount: 3 });
+
+    mockFetch.mockImplementation(async () => {
+      return { ok: false, status: 500, text: () => Promise.resolve('{"error": "Global outage"}') };
+    });
+
+    let finalStatus: string | null = null;
+    let finalError: string | null = null;
+    const ctx = makeCtx(node, {
+      updateNodeData: vi.fn().mockImplementation((_id, data) => {
+        if (data.status) finalStatus = data.status;
+        if (data.error) finalError = data.error;
+      }),
+    });
+
+    await expect(executeNanoBanana(ctx)).rejects.toThrow("Global outage");
+    expect(finalStatus).toBe("error");
+    expect(finalError).toBe("Global outage");
+  });
 });
+
