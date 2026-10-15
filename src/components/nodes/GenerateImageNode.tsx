@@ -29,13 +29,14 @@ import {
   ErrorMessage,
   ErrorOverlay,
   LoadingOverlay,
+  PanelButton,
   SelectField,
   Spinner,
   SummaryValues,
   sameInputSchema,
   type SocketSpec,
 } from "./ui";
-import { Download, X } from "lucide-react";
+import { Download, Play, X } from "lucide-react";
 
 const INPUT_SOCKETS: SocketSpec[] = [
   { id: "image", type: "image", label: "Image" },
@@ -268,6 +269,14 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
     [id, updateNodeData]
   );
 
+  const handleBatchCountChange = useCallback(
+    (value: string) => {
+      const count = Math.max(1, Math.min(10, parseInt(value, 10) || 1));
+      updateNodeData(id, { batchCount: count });
+    },
+    [id, updateNodeData]
+  );
+
   // Handle inputs loaded from schema
   // Read through a ref so the callback stays stable: it is a dependency of
   // ModelParameters' schema effect, and a new identity would refetch.
@@ -335,7 +344,7 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
 
   // Use selectedModel.modelId for Gemini models, fallback to legacy model field
   const currentModelId = isGeminiProvider ? (nodeData.selectedModel?.modelId || nodeData.model) : null;
-  const isNb2Family = currentModelId === "nano-banana-2" || currentModelId === "nano-banana-2.1";
+  const isNb2Family = currentModelId === "nano-banana-2" || currentModelId === "nano-banana-2.1" || currentModelId === "nano-banana-2-1";
   const supportsResolution = currentModelId === "nano-banana-pro" || isNb2Family;
   const aspectRatios = isNb2Family ? EXTENDED_ASPECT_RATIOS : BASE_ASPECT_RATIOS;
   const resolutions = isNb2Family ? RESOLUTIONS_NB2 : RESOLUTIONS_PRO;
@@ -362,9 +371,13 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
     }
   }, [isGeminiProvider, currentModelId, nodeData.resolution]);
 
-  const summaryValues = isGeminiProvider
-    ? [nodeData.aspectRatio || "1:1", supportsResolution ? nodeData.resolution || "2K" : null]
-    : [];
+  const batchCount = nodeData.batchCount || 1;
+  const summaryValues = [
+    ...(isGeminiProvider
+      ? [nodeData.aspectRatio || "1:1", supportsResolution ? nodeData.resolution || "2K" : null]
+      : []),
+    batchCount > 1 ? `${batchCount}× batch` : null,
+  ].filter(Boolean) as string[];
 
   const hasSettings = Boolean(
     (isGeminiProvider && currentModelId) || (!isGeminiProvider && nodeData.selectedModel?.modelId) || nodeData.fallbackModel
@@ -421,6 +434,35 @@ export function GenerateImageNode({ id, data, selected }: NodeProps<NanoBananaNo
           onParametersChange={handleParametersChange}
           onInputsLoaded={handleInputsLoaded}
         />
+      )}
+
+      {settingsTab === "primary" && (
+        <div className="pt-2 border-t border-card-border/50 flex flex-col gap-1.5">
+          <SelectField
+            label="Batch count"
+            value={String(nodeData.batchCount || 1)}
+            options={[
+              { value: "1", label: "1 image" },
+              { value: "2", label: "2 images" },
+              { value: "3", label: "3 images" },
+              { value: "4", label: "4 images" },
+              { value: "5", label: "5 images" },
+              { value: "6", label: "6 images" },
+              { value: "8", label: "8 images" },
+              { value: "10", label: "10 images" },
+            ]}
+            onChange={handleBatchCountChange}
+          />
+          <PanelButton
+            primary
+            disabled={isRunning || nodeData.status === "loading"}
+            onClick={handleRegenerate}
+            className="w-full h-6 text-xs flex items-center justify-center gap-1.5 mt-0.5"
+          >
+            <Play size={11} fill="currentColor" />
+            <span>{(nodeData.batchCount || 1) > 1 ? `Generate Batch (${nodeData.batchCount}×)` : "Generate"}</span>
+          </PanelButton>
+        </div>
       )}
 
       {settingsTab === "fallback" && nodeData.fallbackModel && (

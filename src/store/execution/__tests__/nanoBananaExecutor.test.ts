@@ -442,3 +442,39 @@ describe("OpenAI generation usage and history", () => {
     expect(ctx.addIncurredCost).toHaveBeenCalledExactlyOnceWith(0.05);
   });
 });
+
+describe("batch generation on node", () => {
+  it("generates batchCount images when batchCount > 1 and appends all to history", async () => {
+    const node = makeNode({ batchCount: 3 });
+    let genCount = 0;
+    mockFetch.mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("save-generation")) {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+      genCount++;
+      return { ok: true, json: async () => ({ success: true, image: `data:image/png;base64,img${genCount}` }) };
+    });
+
+    let currentHistory: any[] = [];
+    const ctx = makeCtx(node, {
+      generationsPath: "/proj/generations",
+      getFreshNode: vi.fn().mockImplementation(() => ({
+        ...node,
+        data: {
+          ...node.data,
+          imageHistory: currentHistory,
+        },
+      })),
+      updateNodeData: vi.fn().mockImplementation((_id, data) => {
+        if (data.imageHistory) {
+          currentHistory = data.imageHistory;
+        }
+      }),
+    });
+
+    await executeNanoBanana(ctx);
+    expect(genCount).toBe(3);
+    expect(currentHistory).toHaveLength(3);
+    expect(ctx.addIncurredCost).toHaveBeenCalledTimes(3);
+  });
+});

@@ -79,6 +79,7 @@ export const MultiSelectToolbar = memo(function MultiSelectToolbar() {
   const runBatch = useWorkflowStore((state) => state.runBatch);
   const isRunning = useWorkflowStore((state) => state.isRunning);
   const runCount = useWorkflowStore((state) => state.runCount);
+  const setRunCount = useWorkflowStore((state) => state.setRunCount);
   const applyModelToNodes = useWorkflowStore((state) => state.applyModelToNodes);
   // One model for the whole selection, offered when every node is the same kind of generator
   const generateType = useMemo(() => sharedGenerateType(selectedNodes), [selectedNodes]);
@@ -270,14 +271,28 @@ export const MultiSelectToolbar = memo(function MultiSelectToolbar() {
       className="nodrag nopan relative"
     >
       {/* Run just the selection */}
-      <ToolbarButton
-        onClick={() => runBatch({ kind: "nodes", nodeIds: selectedNodes.map((node) => node.id) })}
-        disabled={isRunning}
-        label={runCount > 1 ? `Run selected nodes ${runCount}×` : "Run selected nodes"}
-        shortcut="⌥↵"
-      >
-        <Play size={16} strokeWidth={0} fill="currentColor" />
-      </ToolbarButton>
+      <div className="flex items-center">
+        <ToolbarButton
+          onClick={() => runBatch({ kind: "nodes", nodeIds: selectedNodes.map((node) => node.id) })}
+          disabled={isRunning}
+          label={runCount > 1 ? `Run selected nodes ${runCount}×` : "Run selected nodes"}
+          shortcut="⌥↵"
+        >
+          <Play size={16} strokeWidth={0} fill="currentColor" />
+        </ToolbarButton>
+        <button
+          type="button"
+          onClick={() => {
+            const next = runCount === 1 ? 2 : runCount === 2 ? 4 : runCount === 4 ? 10 : 1;
+            setRunCount(next);
+          }}
+          disabled={isRunning}
+          title={`Batch runs: ${runCount}×. Click to cycle (1×, 2×, 4×, 10×)`}
+          className="h-6 px-1.5 mr-0.5 rounded text-[11px] font-mono font-medium text-neutral-400 hover:text-white hover:bg-white/10 transition-colors tabular-nums disabled:opacity-50"
+        >
+          {runCount}×
+        </button>
+      </div>
 
       {/* Separator */}
       <MenuDivider variant="bar" className="mx-0.5" />

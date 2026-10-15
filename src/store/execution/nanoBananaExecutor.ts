@@ -257,7 +257,10 @@ export async function executeNanoBanana(
           ...(generation ? { generation } : {}),
           ...(ctx.batch ? { batch: ctx.batch } : {}),
         };
-        const updatedHistory = [newHistoryItem, ...(nodeData.imageHistory || [])].slice(0, 50);
+        const currentFresh = getFreshNode(node.id);
+        const currentData = (currentFresh?.data || node.data) as NanoBananaNodeData;
+        const currentHistory = currentData.imageHistory || [];
+        const updatedHistory = [newHistoryItem, ...currentHistory].slice(0, 50);
 
         updateNodeData(node.id, {
           outputImage: result.image,
@@ -362,13 +365,18 @@ export async function executeNanoBanana(
     displayName: nodeData.model,
   };
 
-  await runWithFallback({
-    nodeId: node.id,
-    primary: primaryModel,
-    fallback: nodeData.fallbackModel,
-    fallbackParameters: nodeData.fallbackParameters,
-    updateNodeData,
-    runOnce,
-    clearOutput: { outputImage: null },
-  });
+  const batchCount = Math.max(1, Math.min(10, nodeData.batchCount ?? 1));
+
+  for (let i = 0; i < batchCount; i++) {
+    if (signal?.aborted) break;
+    await runWithFallback({
+      nodeId: node.id,
+      primary: primaryModel,
+      fallback: nodeData.fallbackModel,
+      fallbackParameters: nodeData.fallbackParameters,
+      updateNodeData,
+      runOnce,
+      clearOutput: { outputImage: null },
+    });
+  }
 }

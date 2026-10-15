@@ -230,6 +230,7 @@ export interface NanoBananaNodeData extends BaseNodeData {
   fallbackParameters?: Record<string, unknown>; // Parameters for fallback model
   inputSchema?: ModelInputDef[]; // Model's input schema for dynamic handles
   parametersExpanded?: boolean; // Collapse state for inline parameter display
+  batchCount?: number; // 1 to 10 images generated per run into the carousel
   status: NodeStatus;
   error: string | null;
   imageHistory: CarouselImageItem[]; // Carousel history (IDs only)

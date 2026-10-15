@@ -682,6 +682,22 @@ export function FloatingActionBar() {
                 <span>Runs</span>
                 <MenuStepper label="Runs" value={runCount} min={1} max={MAX_RUN_COUNT} onChange={setRunCount} />
               </div>
+              <div className="flex items-center gap-1.5 px-2.5 pb-1.5 pt-0.5">
+                {[1, 2, 4, 10].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setRunCount(preset)}
+                    className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors text-center ${
+                      runCount === preset
+                        ? "bg-neutral-100 text-neutral-900 font-semibold"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {preset}×
+                  </button>
+                ))}
+              </div>
             </MenuSurface>
           )}
         </div>

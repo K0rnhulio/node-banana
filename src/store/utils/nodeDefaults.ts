@@ -246,6 +246,7 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
         error: null,
         imageHistory: [],
         selectedHistoryIndex: 0,
+        batchCount: 1,
       } as NanoBananaNodeData;
     }
     case "generateVideo": {
