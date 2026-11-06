@@ -10,13 +10,33 @@
  * This module is imported by `@/types`, so it must not import from there.
  */
 
-export type LLMProvider = "google" | "openai" | "anthropic";
+import { isKieOnly, isProviderEnabled } from "@/lib/providers/kieOnly";
 
-export const LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = [
+export type LLMProvider = "google" | "openai" | "anthropic" | "kie";
+
+const ALL_LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = [
   { value: "google", label: "Google" },
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
+  { value: "kie", label: "Kie.ai" },
 ];
+
+/** Providers the dropdowns offer: only Kie.ai in Kie-only mode (`@/lib/providers/kieOnly`). */
+export const LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = ALL_LLM_PROVIDER_OPTIONS.filter((o) =>
+  isProviderEnabled(o.value),
+);
+
+/**
+ * Provider options for a node's menu. A node saved on a provider Kie-only
+ * mode hides keeps it listed, marked as off, so the menu shows what it holds
+ * until the user picks another.
+ */
+export function llmProviderOptions(current?: string | null): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [...LLM_PROVIDER_OPTIONS];
+  const hidden = current ? ALL_LLM_PROVIDER_OPTIONS.find((o) => o.value === current && !isProviderEnabled(o.value)) : undefined;
+  if (hidden) options.push({ value: hidden.value, label: `${hidden.label} (off)` });
+  return options;
+}
 
 export interface LLMModelEntry {
   /** The id stored in workflows and shown in the dropdown value. */
@@ -56,6 +76,14 @@ export const LLM_MODELS = [
   { id: "claude-haiku-4-5", provider: "anthropic", label: "Claude Haiku 4.5" },
   { id: "claude-opus-5", provider: "anthropic", label: "Claude Opus 5" },
   { id: "claude-fable-5-1", provider: "anthropic", label: "Claude Fable 5.1" },
+  // Kie.ai — https://kie.ai/market/chat, billed to the Kie key. Claude models
+  // speak the Anthropic Messages format (/claude/v1/messages), GPT models the
+  // OpenAI Responses format (/codex/v1/responses). Ids are prefixed so they
+  // never collide with the same model offered directly by its maker.
+  { id: "kie-claude-haiku-5-5", provider: "kie", label: "Claude Haiku 5.5", apiId: "claude-haiku-5-5" },
+  { id: "kie-claude-sonnet-5-5", provider: "kie", label: "Claude Sonnet 5.5", apiId: "claude-sonnet-5-5" },
+  { id: "kie-claude-opus-5-5", provider: "kie", label: "Claude Opus 5.5", apiId: "claude-opus-5-5" },
+  { id: "kie-gpt-6-luna", provider: "kie", label: "GPT-6 Luna", apiId: "gpt-6-luna" },
 ] as const satisfies readonly LLMModelEntry[];
 
 /** An id currently offered in the dropdowns. */
@@ -93,8 +121,8 @@ export const LEGACY_LLM_MODELS: readonly LegacyLLMModel[] = [
   { id: "claude-haiku-4.5", provider: "anthropic", label: "Claude Haiku 4.5", status: "retired", replacement: "claude-haiku-4-5" },
 ];
 
-export const DEFAULT_LLM_PROVIDER: LLMProvider = "google";
-export const DEFAULT_LLM_MODEL: LLMModelId = "gemini-3.8-flash";
+export const DEFAULT_LLM_PROVIDER: LLMProvider = isKieOnly() ? "kie" : "google";
+export const DEFAULT_LLM_MODEL: LLMModelId = isKieOnly() ? "kie-claude-haiku-5-5" : "gemini-3.8-flash";
 
 /**
  * The model behind Node Banana's own Gemini-only features: the chat

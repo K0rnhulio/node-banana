@@ -1,5 +1,6 @@
 "use client";
 
+import { isProviderEnabled } from "@/lib/providers/kieOnly";
 import { Check, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FTUXStepProps } from "@/types/ftux";
@@ -97,7 +98,7 @@ export function FTUXApiKeysStep({}: FTUXStepProps) {
         setLocalKeys(previous => Object.fromEntries(Object.entries(previous).map(([id, value]) => [id, value || settings.providers[id as ProviderType]?.apiKey || ''])) as Record<ProviderType, string>);
       }} />
       <div className="border-t border-chrome-border">
-        {providers.map((provider, index) => {
+        {providers.filter((provider) => isProviderEnabled(provider.id)).map((provider, index) => {
           const hasKey = hasEnvKey(provider.id);
 
           return (

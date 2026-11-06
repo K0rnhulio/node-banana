@@ -1,3 +1,4 @@
+import { isProviderEnabled, providerDisabledMessage } from "@/lib/providers/kieOnly";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchWithRetry, retryTransient } from "@/lib/providers/retry";
 import { GoogleGenAI } from "@google/genai";
@@ -276,6 +277,122 @@ async function generateWithAnthropic(
   return text;
 }
 
+const KIE_API_BASE = "https://api.kie.ai";
+
+/** Split a data URL into its media type and base64 payload; a bare string is taken as PNG. */
+function splitDataUrl(img: string): { mediaType: string; data: string } {
+  const matches = img.match(/^data:(.+?);base64,(.+)$/);
+  return matches ? { mediaType: matches[1], data: matches[2] } : { mediaType: "image/png", data: img };
+}
+
+/** Kie answers some failures with HTTP 200 and `{ code, msg }`; read either shape. */
+function kieErrorMessage(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as { code?: unknown; msg?: unknown; error?: { message?: unknown } };
+  if (b.error && typeof b.error.message === "string") return b.error.message;
+  if (typeof b.code === "number" && b.code !== 200) return typeof b.msg === "string" ? b.msg : `Kie.ai error ${b.code}`;
+  return null;
+}
+
+/**
+ * Kie.ai chat models, billed to the Kie key. Claude models use Kie's
+ * Anthropic Messages endpoint; GPT models its OpenAI Responses endpoint.
+ * Temperature is not sent: neither endpoint documents it.
+ */
+async function generateWithKie(
+  prompt: string,
+  model: string,
+  maxTokens: number,
+  images?: string[],
+  requestId?: string,
+  userApiKey?: string | null
+): Promise<string> {
+  const apiKey = userApiKey || process.env.KIE_API_KEY;
+  if (!apiKey) {
+    logger.error('api.error', 'KIE_API_KEY not configured', { requestId });
+    throw new Error("KIE_API_KEY not configured. Add it to .env.local or configure in Settings.");
+  }
+
+  const isClaude = model.startsWith("claude-");
+  logger.info('api.llm', 'Calling Kie.ai chat API', {
+    requestId,
+    model,
+    format: isClaude ? "messages" : "responses",
+    maxTokens,
+    imageCount: images?.length || 0,
+    promptLength: prompt.length,
+  });
+
+  let url: string;
+  let body: Record<string, unknown>;
+  if (isClaude) {
+    const content: Array<Record<string, unknown>> = (images ?? []).map((img) => {
+      const { mediaType, data } = splitDataUrl(img);
+      return { type: "image", source: { type: "base64", media_type: mediaType, data } };
+    });
+    content.push({ type: "text", text: prompt });
+    url = `${KIE_API_BASE}/claude/v1/messages`;
+    body = { model, messages: [{ role: "user", content }], max_tokens: maxTokens, stream: false };
+  } else {
+    const content: Array<Record<string, unknown>> = (images ?? []).map((img) => {
+      const { mediaType, data } = splitDataUrl(img);
+      return { type: "input_image", image_url: `data:${mediaType};base64,${data}` };
+    });
+    content.push({ type: "input_text", text: prompt });
+    url = `${KIE_API_BASE}/codex/v1/responses`;
+    body = { model, input: [{ role: "user", content }], stream: false };
+  }
+
+  const startTime = Date.now();
+  const response = await fetchWithRetry(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const duration = Date.now() - startTime;
+
+  const data = await response.json().catch(() => ({}));
+  const errorMessage = kieErrorMessage(data);
+  if (!response.ok || errorMessage) {
+    logger.error('api.error', 'Kie.ai chat request failed', { requestId, status: response.status, error: errorMessage });
+    throw new Error(errorMessage || `Kie.ai API error: ${response.status}`);
+  }
+
+  let text: string | undefined;
+  if (isClaude) {
+    const blocks = Array.isArray(data.content) ? data.content : [];
+    text = blocks
+      .filter((b: { type?: string; text?: unknown }) => b?.type === "text" && typeof b.text === "string")
+      .map((b: { text: string }) => b.text)
+      .join("");
+  } else {
+    const items = Array.isArray(data.output) ? data.output : [];
+    text = items
+      .filter((item: { type?: string }) => item?.type === "message")
+      .flatMap((item: { content?: Array<{ type?: string; text?: unknown }> }) => item.content ?? [])
+      .filter((part: { type?: string; text?: unknown }) => part?.type === "output_text" && typeof part.text === "string")
+      .map((part: { text: string }) => part.text)
+      .join("");
+  }
+
+  if (!text) {
+    logger.error('api.error', 'No text in Kie.ai response', { requestId });
+    throw new Error("No text in Kie.ai response");
+  }
+
+  logger.info('api.llm', 'Kie.ai chat response received', {
+    requestId,
+    duration,
+    responseLength: text.length,
+    creditsConsumed: data.credits_consumed,
+  });
+
+  return text;
+}
+
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId();
 
@@ -284,6 +401,7 @@ export async function POST(request: NextRequest) {
     const geminiApiKey = request.headers.get("X-Gemini-API-Key");
     const openaiApiKey = request.headers.get("X-OpenAI-API-Key");
     const anthropicApiKey = request.headers.get("X-Anthropic-API-Key");
+    const kieApiKey = request.headers.get("X-Kie-Key");
 
     const body: LLMGenerateRequest = await request.json();
     const {
@@ -314,10 +432,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (provider !== "google" && provider !== "openai" && provider !== "anthropic") {
+    if (provider !== "google" && provider !== "openai" && provider !== "anthropic" && provider !== "kie") {
       logger.warn('api.llm', 'Unknown provider requested', { requestId, provider });
       return NextResponse.json<LLMGenerateResponse>(
         { success: false, error: `Unknown provider: ${provider}` },
+        { status: 400 }
+      );
+    }
+
+    if (!isProviderEnabled(provider)) {
+      return NextResponse.json<LLMGenerateResponse>(
+        { success: false, error: `${providerDisabledMessage(provider)} Pick a Kie.ai model on this node.` },
         { status: 400 }
       );
     }
@@ -341,6 +466,8 @@ export async function POST(request: NextRequest) {
       text = await generateWithGoogle(prompt, resolved.apiId, temperature, maxTokens, images, requestId, geminiApiKey);
     } else if (provider === "openai") {
       text = await generateWithOpenAI(prompt, resolved.apiId, temperature, maxTokens, images, requestId, openaiApiKey);
+    } else if (provider === "kie") {
+      text = await generateWithKie(prompt, resolved.apiId, maxTokens, images, requestId, kieApiKey);
     } else {
       text = await generateWithAnthropic(prompt, resolved.apiId, temperature, maxTokens, images, requestId, anthropicApiKey);
     }

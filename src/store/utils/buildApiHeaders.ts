@@ -106,6 +106,11 @@ export function buildLlmHeaders(
     if (openaiConfig?.apiKey) {
       headers["X-OpenAI-API-Key"] = openaiConfig.apiKey;
     }
+  } else if (llmProvider === "kie") {
+    const kieConfig = providerSettings.providers.kie;
+    if (kieConfig?.apiKey) {
+      headers["X-Kie-Key"] = kieConfig.apiKey;
+    }
   } else if (llmProvider === "anthropic") {
     const anthropicConfig = providerSettings.providers.anthropic;
     if (anthropicConfig?.apiKey) {
