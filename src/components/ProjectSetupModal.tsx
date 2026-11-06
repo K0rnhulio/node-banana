@@ -1,5 +1,6 @@
 "use client";
 
+import { isProviderEnabled } from "@/lib/providers/kieOnly";
 import { useState, useEffect, useRef } from "react";
 import { generateWorkflowId, useWorkflowStore } from "@/store/workflowStore";
 import { ProviderType, ProviderSettings, NodeDefaultsConfig, LLMProvider, LLMModelType, EdgeAppearance, EdgeStyle } from "@/types";
@@ -100,7 +101,10 @@ const SETTINGS_PAGES: { id: SettingsTab; label: string; title: string; descripti
   { id: "project", label: "Project", title: "Project", description: "Name, location and how the file is written." },
   { id: "library", label: "Storage", title: "Storage", description: "Where your projects and generations are saved." },
   { id: "providers", label: "Providers", title: "Providers", description: "API keys for the model providers this project can call." },
-  { id: "comfy", label: "ComfyUI", title: "ComfyUI", description: "Where Comfy app nodes run." },
+  // ComfyUI runs apart from Kie, so Kie-only mode leaves its page out.
+  ...(isProviderEnabled("comfy")
+    ? [{ id: "comfy" as const, label: "ComfyUI", title: "ComfyUI", description: "Where Comfy app nodes run." }]
+    : []),
   { id: "nodeDefaults", label: "Node defaults", title: "Node defaults", description: "Applied when a node is added from the bar or a shortcut." },
   { id: "canvas", label: "Canvas", title: "Canvas", description: "How you navigate and select on the canvas." },
   { id: "noodles", label: "Noodles", title: "Noodles", description: "How the connections between nodes are drawn." },
@@ -796,7 +800,7 @@ export function ProjectSetupModal({
               ]);
             }} />
 
-            {PROVIDER_ROWS.map((provider, index) => {
+            {PROVIDER_ROWS.filter((row) => isProviderEnabled(row.id)).map((provider, index) => {
               const fromEnv = Boolean(envStatus?.[provider.id]);
               return (
                 <DialogRow

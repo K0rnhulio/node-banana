@@ -10,14 +10,33 @@
  * This module is imported by `@/types`, so it must not import from there.
  */
 
+import { isKieOnly, isProviderEnabled } from "@/lib/providers/kieOnly";
+
 export type LLMProvider = "google" | "openai" | "anthropic" | "kie";
 
-export const LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = [
+const ALL_LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = [
   { value: "google", label: "Google" },
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
   { value: "kie", label: "Kie.ai" },
 ];
+
+/** Providers the dropdowns offer: only Kie.ai in Kie-only mode (`@/lib/providers/kieOnly`). */
+export const LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = ALL_LLM_PROVIDER_OPTIONS.filter((o) =>
+  isProviderEnabled(o.value),
+);
+
+/**
+ * Provider options for a node's menu. A node saved on a provider Kie-only
+ * mode hides keeps it listed, marked as off, so the menu shows what it holds
+ * until the user picks another.
+ */
+export function llmProviderOptions(current?: string | null): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [...LLM_PROVIDER_OPTIONS];
+  const hidden = current ? ALL_LLM_PROVIDER_OPTIONS.find((o) => o.value === current && !isProviderEnabled(o.value)) : undefined;
+  if (hidden) options.push({ value: hidden.value, label: `${hidden.label} (off)` });
+  return options;
+}
 
 export interface LLMModelEntry {
   /** The id stored in workflows and shown in the dropdown value. */
@@ -102,8 +121,8 @@ export const LEGACY_LLM_MODELS: readonly LegacyLLMModel[] = [
   { id: "claude-haiku-4.5", provider: "anthropic", label: "Claude Haiku 4.5", status: "retired", replacement: "claude-haiku-4-5" },
 ];
 
-export const DEFAULT_LLM_PROVIDER: LLMProvider = "google";
-export const DEFAULT_LLM_MODEL: LLMModelId = "gemini-3.8-flash";
+export const DEFAULT_LLM_PROVIDER: LLMProvider = isKieOnly() ? "kie" : "google";
+export const DEFAULT_LLM_MODEL: LLMModelId = isKieOnly() ? "kie-claude-haiku-5-5" : "gemini-3.8-flash";
 
 /**
  * The model behind Node Banana's own Gemini-only features: the chat

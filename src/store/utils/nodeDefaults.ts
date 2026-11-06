@@ -38,6 +38,19 @@ import {
 import { loadGenerateImageDefaults, loadNodeDefaults } from "./localStorage";
 import { getEasingBezier } from "@/lib/easing-presets";
 import { DEFAULT_LLM_MODEL, DEFAULT_LLM_PROVIDER } from "@/lib/llm/catalog";
+import { isKieOnly, isProviderEnabled } from "@/lib/providers/kieOnly";
+
+/** What a new Generate Image node runs in Kie-only mode. */
+export const KIE_DEFAULT_IMAGE_MODEL: SelectedModel = {
+  provider: "kie",
+  modelId: "nano-banana-2",
+  displayName: "Nano Banana 2 (Kie)",
+};
+
+/** A saved default model, unless Kie-only mode hides its provider. */
+function enabledModel(model: SelectedModel | undefined): SelectedModel | undefined {
+  return model && isProviderEnabled(model.provider) ? model : undefined;
+}
 
 /**
  * Default dimensions for each node type.
@@ -215,8 +228,11 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
 
       // Determine selectedModel: prefer new nodeDefaults, fallback to legacy
       let selectedModel: SelectedModel;
-      if (nodeDefaults.generateImage?.selectedModel) {
-        selectedModel = nodeDefaults.generateImage.selectedModel;
+      const savedModel = enabledModel(nodeDefaults.generateImage?.selectedModel);
+      if (savedModel) {
+        selectedModel = savedModel;
+      } else if (isKieOnly()) {
+        selectedModel = KIE_DEFAULT_IMAGE_MODEL;
       } else {
         const modelDisplayName = MODEL_DISPLAY_NAMES[legacyDefaults.model as ModelType] || legacyDefaults.model;
         selectedModel = {
@@ -255,7 +271,7 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
         inputImages: [],
         inputPrompt: null,
         outputVideo: null,
-        selectedModel: nodeDefaults.generateVideo?.selectedModel,
+        selectedModel: enabledModel(nodeDefaults.generateVideo?.selectedModel),
         status: "idle",
         error: null,
         videoHistory: [],
@@ -270,7 +286,7 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
         output3dUrl: null,
         savedFilename: null,
         savedFilePath: null,
-        selectedModel: nodeDefaults.generate3d?.selectedModel,
+        selectedModel: enabledModel(nodeDefaults.generate3d?.selectedModel),
         status: "idle",
         error: null,
       } as Generate3DNodeData;
@@ -280,7 +296,7 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
       return {
         inputPrompt: null,
         outputAudio: null,
-        selectedModel: nodeDefaults.generateAudio?.selectedModel,
+        selectedModel: enabledModel(nodeDefaults.generateAudio?.selectedModel),
         status: "idle",
         error: null,
         audioHistory: [],
@@ -291,7 +307,8 @@ export const createDefaultNodeData = (type: NodeType): WorkflowNodeData => {
     }
     case "llmGenerate": {
       const nodeDefaults = loadNodeDefaults();
-      const llmDefaults = nodeDefaults.llm;
+      // A saved default on a provider Kie-only mode hides falls back to Kie.
+      const llmDefaults = nodeDefaults.llm && isProviderEnabled(nodeDefaults.llm.provider ?? DEFAULT_LLM_PROVIDER) ? nodeDefaults.llm : undefined;
       return {
         inputPrompt: null,
         inputImages: [],

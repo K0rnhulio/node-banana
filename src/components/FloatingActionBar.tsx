@@ -1,5 +1,6 @@
 "use client";
 
+import { isNodeTypeEnabled } from "@/lib/providers/kieOnly";
 import { MenuDivider, MenuItem, MenuSectionLabel, MenuStepper, MenuSurface } from "@/components/ui/Menu";
 import { MAX_RUN_COUNT } from "@/store/utils/runBatch";
 import { groupLabelColor } from "@/utils/groupColors";
@@ -242,7 +243,7 @@ function GenerateMenu() {
 
       {isOpen && (
         <MenuSurface floating={false} role="menu" className="absolute bottom-full left-0 z-20 mb-2 min-w-[168px] py-1">
-          {GENERATORS.map((g) => (
+          {GENERATORS.filter((g) => isNodeTypeEnabled(g.type)).map((g) => (
             <MenuItem
               key={g.type}
               role="menuitem"
@@ -297,7 +298,7 @@ function AllNodesMenu() {
               <MenuSectionLabel className={`px-3 py-1${catIndex > 0 ? " border-t border-chrome-border" : ""}`}>
                 {category.label}
               </MenuSectionLabel>
-              {category.nodes.map((node) => (
+              {category.nodes.filter((node) => isNodeTypeEnabled(node.type)).map((node) => (
                 <MenuItem
                   key={node.type}
                   type="button"

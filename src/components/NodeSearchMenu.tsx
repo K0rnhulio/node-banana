@@ -1,5 +1,6 @@
 "use client";
 
+import { isNodeTypeEnabled } from "@/lib/providers/kieOnly";
 import { MenuEmpty, MenuFooter, MenuHeader, MenuHint, MenuItem, MenuList, MenuSectionLabel, MenuSurface } from "@/components/ui/Menu";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { NodeType } from "@/types";
@@ -41,7 +42,7 @@ export function NodeSearchMenu({ position, onSelect, onClose, allowedTypes }: No
   const options = useMemo(
     () => allowedTypes
       ? ALL_NODE_OPTIONS.filter((option) => allowedTypes.includes(option.type as NodeType))
-      : [...ALL_NODE_OPTIONS, ...savedComfyOptions(savedNodes)],
+      : [...ALL_NODE_OPTIONS, ...(isNodeTypeEnabled("comfyApp") ? savedComfyOptions(savedNodes) : [])],
     [savedNodes, allowedTypes]
   );
 

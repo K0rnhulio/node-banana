@@ -5,7 +5,7 @@ import { NodeProps, Node } from "@xyflow/react";
 import { NodeShell } from "./NodeShell";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { LLMGenerateNodeData, LLMProvider, LLMModelType } from "@/types";
-import { LLM_PROVIDER_OPTIONS, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
+import { llmProviderOptions, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
 import { SettingsTabBar } from "./SettingsTabBar";
 import {
   ControlsCard,
@@ -131,7 +131,7 @@ export function LLMGenerateNode({ id, data, selected }: NodeProps<LLMGenerateNod
 
       {settingsTab === "primary" && (
         <>
-          <SelectField label="Provider" value={provider} options={LLM_PROVIDER_OPTIONS} onChange={handleProviderChange} />
+          <SelectField label="Provider" value={provider} options={llmProviderOptions(provider)} onChange={handleProviderChange} />
           <SelectField label="Model" value={currentModel} options={availableModels} onChange={handleModelChange} />
           <RangeField
             label="Temperature"

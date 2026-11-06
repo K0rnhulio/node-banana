@@ -24,6 +24,10 @@ KIE_API_KEY=your_kie_api_key        # Optional, for Kie.ai models (Sora, Veo, Kl
 COMFY_API_KEY=your_comfy_api_key    # Optional, for ComfyUI-hosted models via Comfy Router (Flux, GPT Image, Nano Banana, Kling, Veo, etc.)
 ```
 
+## Kie-only mode
+
+This fork runs every model through one Kie.ai key (`src/lib/providers/kieOnly.ts`). It is on by default: Settings offers only the Kie key, `/api/models` lists only Kie models, the LLM node offers only Kie.ai chat models, new nodes default to Kie models, the 3D and ComfyUI app nodes are left out of the add menus and shortcuts, and `/api/generate` and `/api/llm` refuse other providers. The other providers' code stays in place; `NEXT_PUBLIC_NB_KIE_ONLY=0` in `.env.local` (then rebuild) brings them all back. The test suite runs with it off (`src/test/setup.ts`); `src/lib/providers/__tests__/kieOnly.test.ts` covers it on.
+
 ## Architecture Overview
 
 Node Banana is a node-based visual workflow editor for AI image generation. Users drag nodes onto a React Flow canvas, connect them via typed handles, and execute pipelines that call AI APIs.

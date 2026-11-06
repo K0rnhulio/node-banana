@@ -1,3 +1,4 @@
+import { isProviderEnabled, providerDisabledMessage } from "@/lib/providers/kieOnly";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchWithRetry, retryTransient } from "@/lib/providers/retry";
 import { GoogleGenAI } from "@google/genai";
@@ -435,6 +436,13 @@ export async function POST(request: NextRequest) {
       logger.warn('api.llm', 'Unknown provider requested', { requestId, provider });
       return NextResponse.json<LLMGenerateResponse>(
         { success: false, error: `Unknown provider: ${provider}` },
+        { status: 400 }
+      );
+    }
+
+    if (!isProviderEnabled(provider)) {
+      return NextResponse.json<LLMGenerateResponse>(
+        { success: false, error: `${providerDisabledMessage(provider)} Pick a Kie.ai model on this node.` },
         { status: 400 }
       );
     }

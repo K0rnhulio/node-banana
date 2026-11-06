@@ -2,6 +2,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+// The suite tests every provider; Kie-only mode has its own tests, which
+// set NEXT_PUBLIC_NB_KIE_ONLY themselves.
+process.env.NEXT_PUBLIC_NB_KIE_ONLY = "0";
+
 // Mock ResizeObserver for React Flow tests
 class ResizeObserverMock {
   observe = vi.fn();

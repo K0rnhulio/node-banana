@@ -50,7 +50,7 @@ import {
   type SocketType,
 } from "../nodes/ui";
 import { getTemplateEntry, getTemplateNodeIcon, templateHandleKind, type TemplateHandleDef } from "./templateCatalog";
-import { LLM_PROVIDER_OPTIONS, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
+import { llmProviderOptions, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
 
 export interface TemplateNodeData extends Record<string, unknown> {
   nodeType: NodeType;
@@ -412,7 +412,7 @@ function useLlmControls(nodeId: string, overrides: Record<string, unknown>) {
       expanded={isParamsExpanded}
       onToggle={() => setIsParamsExpanded((prev) => !prev)}
     >
-      <SelectField label="Provider" value={provider} options={LLM_PROVIDER_OPTIONS} onChange={handleProviderChange} />
+      <SelectField label="Provider" value={provider} options={llmProviderOptions(provider)} onChange={handleProviderChange} />
       <SelectField
         label="Model"
         value={model}

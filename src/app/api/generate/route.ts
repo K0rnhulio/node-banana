@@ -18,6 +18,7 @@
  *   - X-Gemini-API-Key, X-Replicate-API-Key, X-Fal-API-Key, X-Kie-Key,
  *     X-WaveSpeed-Key, X-OpenAI-API-Key, X-Comfy-Router-Key
  */
+import { isProviderEnabled, providerDisabledMessage } from "@/lib/providers/kieOnly";
 import { NextRequest, NextResponse } from "next/server";
 import { GenerateRequest, GenerateResponse, ModelType, SelectedModel, ProviderType } from "@/types";
 import { GenerationInput, ModelCapability } from "@/lib/providers/types";
@@ -111,6 +112,15 @@ export async function POST(request: NextRequest) {
     // Determine which provider to use
     const provider: ProviderType = selectedModel?.provider || "gemini";
     console.log(`[API:${requestId}] Provider: ${provider}, Model: ${selectedModel?.modelId || model}`);
+
+    // Kie-only mode: a node saved with another provider's model says so
+    // instead of spending that provider's key.
+    if (!isProviderEnabled(provider)) {
+      return NextResponse.json<GenerateResponse>(
+        { success: false, error: `${providerDisabledMessage(provider)} Pick a Kie.ai model on this node.` },
+        { status: 400 }
+      );
+    }
 
     // Route to appropriate provider
     if (provider === "replicate") {
