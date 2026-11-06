@@ -31,6 +31,7 @@ function providerTypeToLlmProvider(p: ProviderType): LLMProvider {
   if (p === "gemini") return "google";
   if (p === "openai") return "openai";
   if (p === "anthropic") return "anthropic";
+  if (p === "kie") return "kie";
   // Unsupported provider for LLM — caller will surface an error from /api/llm.
   return p as unknown as LLMProvider;
 }

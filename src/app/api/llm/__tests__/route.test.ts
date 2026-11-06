@@ -909,4 +909,123 @@ describe("/api/llm route", () => {
       );
     });
   });
+
+  describe("Kie.ai provider", () => {
+    beforeEach(() => {
+      global.fetch = mockFetch;
+    });
+
+    it("sends Claude models to Kie's Messages endpoint with the Kie key and images", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ type: "message", content: [{ type: "text", text: "Painterly prompt" }], credits_consumed: 0.05 }),
+      });
+
+      const request = createMockPostRequest(
+        {
+          prompt: "Describe the family",
+          provider: "kie",
+          model: "kie-claude-haiku-5-5",
+          images: ["data:image/jpeg;base64,AAAA"],
+          temperature: 0.7,
+          maxTokens: 2048,
+        },
+        { "X-Kie-Key": "kie-user-key" }
+      );
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toMatchObject({ success: true, text: "Painterly prompt", model: "kie-claude-haiku-5-5" });
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://api.kie.ai/claude/v1/messages");
+      expect(init.headers).toEqual({ "Content-Type": "application/json", Authorization: "Bearer kie-user-key" });
+      expect(JSON.parse(init.body)).toEqual({
+        model: "claude-haiku-5-5",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "AAAA" } },
+              { type: "text", text: "Describe the family" },
+            ],
+          },
+        ],
+        max_tokens: 2048,
+        stream: false,
+      });
+    });
+
+    it("sends GPT models to Kie's Responses endpoint and reads output_text", async () => {
+      process.env.KIE_API_KEY = "kie-env-key";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            output: [
+              { type: "reasoning", summary: [] },
+              { type: "message", role: "assistant", content: [{ type: "output_text", text: "Luna says hi" }] },
+            ],
+            status: "completed",
+          }),
+      });
+
+      const request = createMockPostRequest({
+        prompt: "Hi",
+        provider: "kie",
+        model: "kie-gpt-6-luna",
+        images: ["data:image/png;base64,BBBB"],
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(data.text).toBe("Luna says hi");
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://api.kie.ai/codex/v1/responses");
+      expect(init.headers.Authorization).toBe("Bearer kie-env-key");
+      expect(JSON.parse(init.body)).toEqual({
+        model: "gpt-6-luna",
+        input: [
+          {
+            role: "user",
+            content: [
+              { type: "input_image", image_url: "data:image/png;base64,BBBB" },
+              { type: "input_text", text: "Hi" },
+            ],
+          },
+        ],
+        stream: false,
+      });
+    });
+
+    it("surfaces Kie's HTTP 200 error bodies", async () => {
+      process.env.KIE_API_KEY = "kie-env-key";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ code: 402, msg: "Insufficient credits" }),
+      });
+
+      const response = await POST(
+        createMockPostRequest({ prompt: "Hi", provider: "kie", model: "kie-claude-haiku-5-5" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data).toMatchObject({ success: false, error: "Insufficient credits" });
+    });
+
+    it("refuses without a Kie key", async () => {
+      delete process.env.KIE_API_KEY;
+      const response = await POST(
+        createMockPostRequest({ prompt: "Hi", provider: "kie", model: "kie-claude-haiku-5-5" })
+      );
+      const data = await response.json();
+
+      expect(data.success).toBe(false);
+      expect(data.error).toContain("KIE_API_KEY");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
 });

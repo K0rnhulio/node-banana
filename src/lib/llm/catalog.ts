@@ -10,12 +10,13 @@
  * This module is imported by `@/types`, so it must not import from there.
  */
 
-export type LLMProvider = "google" | "openai" | "anthropic";
+export type LLMProvider = "google" | "openai" | "anthropic" | "kie";
 
 export const LLM_PROVIDER_OPTIONS: { value: LLMProvider; label: string }[] = [
   { value: "google", label: "Google" },
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
+  { value: "kie", label: "Kie.ai" },
 ];
 
 export interface LLMModelEntry {
@@ -56,6 +57,14 @@ export const LLM_MODELS = [
   { id: "claude-haiku-4-5", provider: "anthropic", label: "Claude Haiku 4.5" },
   { id: "claude-opus-5", provider: "anthropic", label: "Claude Opus 5" },
   { id: "claude-fable-5-1", provider: "anthropic", label: "Claude Fable 5.1" },
+  // Kie.ai — https://kie.ai/market/chat, billed to the Kie key. Claude models
+  // speak the Anthropic Messages format (/claude/v1/messages), GPT models the
+  // OpenAI Responses format (/codex/v1/responses). Ids are prefixed so they
+  // never collide with the same model offered directly by its maker.
+  { id: "kie-claude-haiku-5-5", provider: "kie", label: "Claude Haiku 5.5", apiId: "claude-haiku-5-5" },
+  { id: "kie-claude-sonnet-5-5", provider: "kie", label: "Claude Sonnet 5.5", apiId: "claude-sonnet-5-5" },
+  { id: "kie-claude-opus-5-5", provider: "kie", label: "Claude Opus 5.5", apiId: "claude-opus-5-5" },
+  { id: "kie-gpt-6-luna", provider: "kie", label: "GPT-6 Luna", apiId: "gpt-6-luna" },
 ] as const satisfies readonly LLMModelEntry[];
 
 /** An id currently offered in the dropdowns. */

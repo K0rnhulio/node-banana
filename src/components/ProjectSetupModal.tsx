@@ -974,7 +974,7 @@ export function ProjectSetupModal({
                         provider: newProvider,
                         model: firstModelForProvider,
                         // Clamp temperature for Anthropic (max 1.0)
-                        ...(newProvider === "anthropic" && currentTemp > 1 ? { temperature: 1 } : {}),
+                        ...((newProvider === "anthropic" || newProvider === "kie") && currentTemp > 1 ? { temperature: 1 } : {}),
                       }
                     }));
                   }}
@@ -1003,7 +1003,7 @@ export function ProjectSetupModal({
                   id="llm-temperature"
                   label="Temperature"
                   min={0}
-                  max={llmProvider === "anthropic" ? 1 : 2}
+                  max={llmProvider === "anthropic" || llmProvider === "kie" ? 1 : 2}
                   step={0.1}
                   value={llmTemperature}
                   readout={llmTemperature.toFixed(1)}
