@@ -812,6 +812,8 @@ const LLM_PROVIDER_ALIASES: Record<string, LLMProvider> = {
   chatgpt: "openai",
   anthropic: "anthropic",
   claude: "anthropic",
+  kie: "kie",
+  "kie.ai": "kie",
 };
 
 type LLMModelChoice = { id: string; label: string; provider: LLMProvider };

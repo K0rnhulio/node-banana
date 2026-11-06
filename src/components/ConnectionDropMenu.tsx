@@ -1,5 +1,6 @@
 "use client";
 
+import { isNodeTypeEnabled } from "@/lib/providers/kieOnly";
 import { MenuFooter, MenuHeader, MenuHint, MenuItem, MenuList, MenuSectionLabel, MenuSurface } from "@/components/ui/Menu";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { NodeType } from "@/types";
@@ -490,7 +491,7 @@ export const ALL_NODE_OPTIONS: MenuOption[] = (() => {
   const all: MenuOption[] = [];
   for (const list of lists) {
     for (const option of list) {
-      if (option.isAction || seen.has(option.type)) continue;
+      if (option.isAction || seen.has(option.type) || !isNodeTypeEnabled(option.type)) continue;
       seen.add(option.type);
       all.push(option);
     }
@@ -559,8 +560,11 @@ export function ConnectionDropMenu({
     // Appended rather than interleaved: the built-ins are a fixed list people
     // learn the shape of, and a saved node dropping into the middle of it would
     // move everything below it each time one is saved.
-    const saved = savedComfyOptionsFor(savedNodes, handleType, connectionType);
-    const withSaved = (options: MenuOption[]): MenuOption[] => [...options, ...saved];
+    const saved = isNodeTypeEnabled("comfyApp") ? savedComfyOptionsFor(savedNodes, handleType, connectionType) : [];
+    const withSaved = (options: MenuOption[]): MenuOption[] => [
+      ...options.filter((option) => option.isAction || isNodeTypeEnabled(option.type)),
+      ...saved,
+    ];
 
     if (connectionType === "source") {
       // Dragging from a source handle (output), need nodes with target handles (inputs)

@@ -1,5 +1,6 @@
 "use client";
 
+import { isNodeTypeEnabled } from "@/lib/providers/kieOnly";
 import { memo, useCallback, useRef, useState, useEffect, useLayoutEffect, useReducer, DragEvent, useMemo, type ComponentType } from "react";
 import {
   ReactFlow,
@@ -2057,7 +2058,7 @@ export function WorkflowCanvas() {
             break;
         }
 
-        if (nodeType) {
+        if (nodeType && isNodeTypeEnabled(nodeType)) {
           event.preventDefault();
           const { centerX, centerY } = getViewportCenter();
           // Offset by half the default node dimensions to center it

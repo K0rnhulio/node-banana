@@ -274,6 +274,7 @@ const LLM_PROVIDER_REQUIREMENTS: Record<LLMProvider, string> = {
   google: "a Gemini API key",
   openai: "an OpenAI API key",
   anthropic: "an Anthropic API key",
+  kie: "a Kie.ai API key",
 };
 
 /** LLM providers and their current models, from the app's LLM catalogue (`src/lib/llm/catalog.ts`). */
@@ -289,8 +290,8 @@ export const LEGACY_LLM_MODEL_IDS: ReadonlyMap<string, (typeof LEGACY_LLM_MODELS
 
 export { DEFAULT_LLM_MODEL, DEFAULT_LLM_PROVIDER, defaultLLMModel };
 
-// LLMGenerateNode.tsx: temperature 0-2 (0-1 for anthropic), max tokens 256-16384.
-export const LLM_TEMPERATURE_MAX: Record<LLMProvider, number> = { google: 2, openai: 2, anthropic: 1 };
+// LLMGenerateNode.tsx: temperature 0-2 (0-1 for anthropic and kie), max tokens 256-16384.
+export const LLM_TEMPERATURE_MAX: Record<LLMProvider, number> = { google: 2, openai: 2, anthropic: 1, kie: 1 };
 export const LLM_MAX_TOKENS = { min: 256, max: 16384 } as const;
 
 // Mirrors MODEL_OPTIONS in RemoveBackgroundNode.tsx.

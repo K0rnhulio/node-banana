@@ -19,6 +19,7 @@
  */
 
 import { ProviderType } from "@/types";
+import { isProviderEnabled, providerDisabledMessage } from "./kieOnly";
 import { OPENAI_IMAGE_25_MODELS } from "./openaiImages";
 import { GEMINI_OMNI_MODELS } from "./geminiOmni";
 import { ProviderModel, ModelCapability } from "./types";
@@ -1604,15 +1605,20 @@ export async function listModels(
   const capabilitiesFilter = query.capabilities ?? null;
   const providerTimeoutMs = options.providerTimeoutMs ?? PROVIDER_TIMEOUT_MS;
 
-  const replicateKey = keys.replicate || null;
-  const falKey = keys.fal || null;
+  // Kie-only mode hides every other provider, whatever keys are set.
+  if (providerFilter && !isProviderEnabled(providerFilter)) {
+    return { ok: false, error: providerDisabledMessage(providerFilter), status: 400 };
+  }
+  const keyFor = (provider: ProviderType) => (isProviderEnabled(provider) ? keys[provider as keyof ProviderKeys] || null : null);
+  const replicateKey = keyFor("replicate");
+  const falKey = keyFor("fal");
   const kieKey = keys.kie || null;
-  const wavespeedKey = keys.wavespeed || null;
-  const openaiKey = keys.openai || null;
-  const comfyKey = keys.comfy || null;
+  const wavespeedKey = keyFor("wavespeed");
+  const openaiKey = keyFor("openai");
+  const comfyKey = keyFor("comfy");
 
   // Build list of all available providers (have keys from env or client headers)
-  const availableProviders: string[] = ["gemini"]; // Gemini always available
+  const availableProviders: string[] = isProviderEnabled("gemini") ? ["gemini"] : []; // Gemini always available unless Kie-only
   if (falKey) availableProviders.push("fal");
   if (replicateKey) availableProviders.push("replicate");
   if (kieKey) availableProviders.push("kie");
@@ -1684,7 +1690,7 @@ export async function listModels(
     }
   } else {
     // Include all providers that have keys configured
-    includeGemini = true; // Gemini always available
+    includeGemini = isProviderEnabled("gemini"); // Gemini always available unless Kie-only
     includeKie = kieKey ? true : false; // Kie only if API key is configured
     includeOpenai = openaiKey ? true : false; // OpenAI only if API key is configured
     includeComfy = comfyKey ? true : false; // Comfy Router only if API key is configured

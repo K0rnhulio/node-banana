@@ -5,7 +5,7 @@ import { NodeProps, Node } from "@xyflow/react";
 import { NodeShell } from "./NodeShell";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { LLMGenerateNodeData, LLMProvider, LLMModelType } from "@/types";
-import { LLM_PROVIDER_OPTIONS, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
+import { llmProviderOptions, defaultLLMModel, llmModelLabel, llmModelOptions } from "@/lib/llm/catalog";
 import { SettingsTabBar } from "./SettingsTabBar";
 import {
   ControlsCard,
@@ -90,7 +90,7 @@ export function LLMGenerateNode({ id, data, selected }: NodeProps<LLMGenerateNod
         provider: newProvider,
         model: firstModelForProvider,
       };
-      if (newProvider === "anthropic" && (nodeData.temperature ?? 0.7) > 1) {
+      if ((newProvider === "anthropic" || newProvider === "kie") && (nodeData.temperature ?? 0.7) > 1) {
         updates.temperature = 1;
       }
       updateNodeData(id, updates);
@@ -131,13 +131,13 @@ export function LLMGenerateNode({ id, data, selected }: NodeProps<LLMGenerateNod
 
       {settingsTab === "primary" && (
         <>
-          <SelectField label="Provider" value={provider} options={LLM_PROVIDER_OPTIONS} onChange={handleProviderChange} />
+          <SelectField label="Provider" value={provider} options={llmProviderOptions(provider)} onChange={handleProviderChange} />
           <SelectField label="Model" value={currentModel} options={availableModels} onChange={handleModelChange} />
           <RangeField
             label="Temperature"
             value={temperature}
             min={0}
-            max={provider === "anthropic" ? 1 : 2}
+            max={provider === "anthropic" || provider === "kie" ? 1 : 2}
             step={0.01}
             format={(v) => v.toFixed(2)}
             onChange={(v) => updateNodeData(id, { temperature: v })}
