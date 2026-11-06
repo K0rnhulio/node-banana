@@ -128,7 +128,7 @@ describe("resolveSettings", () => {
     it("moves to the provider's first model and clamps temperature for anthropic", () => {
       const out = resolveSettings(nodeOf("llmGenerate", { temperature: 1.5 }), { provider: "claude" }, context);
       expect(out.patch).toEqual({ model: defaultLLMModel("anthropic"), provider: "anthropic", temperature: 1 });
-      expect(out.patch.model).toBe("claude-sonnet-5");
+      expect(out.patch.model).toBe("claude-haiku-5-5");
       expect(out.warnings.join(" ")).toContain("temperature lowered to 1");
     });
 
