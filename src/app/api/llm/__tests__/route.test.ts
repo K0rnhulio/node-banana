@@ -910,6 +910,55 @@ describe("/api/llm route", () => {
     });
   });
 
+  describe("Anthropic Claude 5.5 models", () => {
+    beforeEach(() => {
+      global.fetch = mockFetch;
+    });
+
+    it("leaves temperature out and reads the text after a thinking block", async () => {
+      process.env.ANTHROPIC_API_KEY = "test-anthropic-key";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            stop_reason: "end_turn",
+            content: [
+              { type: "thinking", thinking: "", signature: "sig" },
+              { type: "text", text: "Watercolor prompt" },
+            ],
+          }),
+      });
+
+      const response = await POST(
+        createMockPostRequest({
+          prompt: "Write it",
+          provider: "anthropic",
+          model: "claude-haiku-5-5",
+          images: ["data:image/png;base64,CCCC"],
+          temperature: 0.7,
+          maxTokens: 4096,
+        })
+      );
+      const data = await response.json();
+
+      expect(data).toMatchObject({ success: true, text: "Watercolor prompt", model: "claude-haiku-5-5" });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body).toEqual({
+        model: "claude-haiku-5-5",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: "image/png", data: "CCCC" } },
+              { type: "text", text: "Write it" },
+            ],
+          },
+        ],
+        max_tokens: 4096,
+      });
+    });
+  });
+
   describe("Kie.ai provider", () => {
     beforeEach(() => {
       global.fetch = mockFetch;

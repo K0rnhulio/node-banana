@@ -1,7 +1,9 @@
 /**
  * Kie-only mode: this fork runs every model through one Kie.ai key.
  *
- * On by default. The other providers' code stays in place but is hidden:
+ * On by default. Kie.ai runs the image, video and audio models; the LLM
+ * node may also call Anthropic directly with the user's own Claude key.
+ * The other providers' code stays in place but is hidden:
  * their keys are not offered in Settings, their models are not listed, and
  * new nodes default to Kie models. Set `NEXT_PUBLIC_NB_KIE_ONLY=0` in
  * `.env.local` (and rebuild) to bring every provider back.
@@ -18,17 +20,20 @@ export function isKieOnly(): boolean {
   return process.env.NEXT_PUBLIC_NB_KIE_ONLY !== "0";
 }
 
+/** Providers Kie-only mode keeps: Kie.ai, and Anthropic for the LLM node. */
+const KIE_ONLY_PROVIDERS: ReadonlySet<string> = new Set(["kie", "anthropic"]);
+
 /**
  * Whether a provider may be offered and called. In Kie-only mode only Kie
- * is; an LLM provider id ("google", "openai", "anthropic") counts the same.
+ * and Anthropic are; an LLM provider id ("google", "openai") counts the same.
  */
 export function isProviderEnabled(provider: AnyProviderId): boolean {
-  return !isKieOnly() || provider === "kie";
+  return !isKieOnly() || KIE_ONLY_PROVIDERS.has(provider);
 }
 
 /** Message for a request that names a provider Kie-only mode hides. */
 export function providerDisabledMessage(provider: AnyProviderId): string {
-  return `${provider} is turned off: this app runs every model through Kie.ai. Set NEXT_PUBLIC_NB_KIE_ONLY=0 to turn the other providers back on.`;
+  return `${provider} is turned off: this app runs its models through Kie.ai (and Claude directly for the LLM node). Set NEXT_PUBLIC_NB_KIE_ONLY=0 to turn the other providers back on.`;
 }
 
 /**

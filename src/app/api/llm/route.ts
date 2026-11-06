@@ -185,6 +185,17 @@ async function generateWithOpenAI(
   return text;
 }
 
+/**
+ * Claude models that still take `temperature`. Claude 5-generation models
+ * (Sonnet 5, Opus 5, Fable 5.1 and the 5.5 family) reject it with a 400, so
+ * the node's temperature is only sent to these older ones.
+ */
+const ANTHROPIC_TEMPERATURE_MODELS: ReadonlySet<string> = new Set([
+  "claude-haiku-4-5",
+  "claude-sonnet-4-5-20250929",
+  "claude-opus-4-6",
+]);
+
 async function generateWithAnthropic(
   prompt: string,
   model: string,
@@ -244,7 +255,7 @@ async function generateWithAnthropic(
     body: JSON.stringify({
       model: modelId,
       messages: [{ role: "user", content }],
-      temperature,
+      ...(ANTHROPIC_TEMPERATURE_MODELS.has(modelId) && { temperature }),
       max_tokens: maxTokens,
     }),
   });
@@ -261,10 +272,16 @@ async function generateWithAnthropic(
   }
 
   const data = await response.json();
-  const text = data.content?.[0]?.text;
+  // Newer models think by default, so the reply can open with a thinking
+  // block; the answer is the text blocks.
+  const blocks: Array<{ type?: string; text?: unknown }> = Array.isArray(data.content) ? data.content : [];
+  const text = blocks
+    .filter((b) => b?.type === "text" && typeof b.text === "string")
+    .map((b) => b.text as string)
+    .join("");
 
   if (!text) {
-    logger.error('api.error', 'No text in Anthropic response', { requestId });
+    logger.error('api.error', 'No text in Anthropic response', { requestId, stopReason: data.stop_reason });
     throw new Error("No text in Anthropic response");
   }
 

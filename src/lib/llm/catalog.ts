@@ -72,6 +72,9 @@ export const LLM_MODELS = [
   { id: "gpt-5.6-sol", provider: "openai", label: "GPT-5.6 Sol" },
   { id: "gpt-6-astra", provider: "openai", label: "GPT-6 Astra" },
   // Anthropic — https://platform.claude.com/docs/en/models/overview
+  { id: "claude-haiku-5-5", provider: "anthropic", label: "Claude Haiku 5.5" },
+  { id: "claude-sonnet-5-5", provider: "anthropic", label: "Claude Sonnet 5.5" },
+  { id: "claude-opus-5-5", provider: "anthropic", label: "Claude Opus 5.5" },
   { id: "claude-sonnet-5", provider: "anthropic", label: "Claude Sonnet 5" },
   { id: "claude-haiku-4-5", provider: "anthropic", label: "Claude Haiku 4.5" },
   { id: "claude-opus-5", provider: "anthropic", label: "Claude Opus 5" },
@@ -121,8 +124,10 @@ export const LEGACY_LLM_MODELS: readonly LegacyLLMModel[] = [
   { id: "claude-haiku-4.5", provider: "anthropic", label: "Claude Haiku 4.5", status: "retired", replacement: "claude-haiku-4-5" },
 ];
 
-export const DEFAULT_LLM_PROVIDER: LLMProvider = isKieOnly() ? "kie" : "google";
-export const DEFAULT_LLM_MODEL: LLMModelId = isKieOnly() ? "kie-claude-haiku-5-5" : "gemini-3.8-flash";
+// Kie-only mode starts LLM nodes on Claude directly: Kie's Claude route has
+// proved unreliable, and the Kie models stay one menu pick away.
+export const DEFAULT_LLM_PROVIDER: LLMProvider = isKieOnly() ? "anthropic" : "google";
+export const DEFAULT_LLM_MODEL: LLMModelId = isKieOnly() ? "claude-haiku-5-5" : "gemini-3.8-flash";
 
 /**
  * The model behind Node Banana's own Gemini-only features: the chat

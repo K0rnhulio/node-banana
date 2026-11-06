@@ -31,7 +31,8 @@ describe("Kie-only mode", () => {
   it("is on unless turned off with 0", () => {
     expect(isKieOnly()).toBe(true);
     expect(isProviderEnabled("kie")).toBe(true);
-    for (const provider of ["gemini", "google", "openai", "anthropic", "replicate", "fal", "wavespeed", "comfy"]) {
+    expect(isProviderEnabled("anthropic")).toBe(true);
+    for (const provider of ["gemini", "google", "openai", "replicate", "fal", "wavespeed", "comfy"]) {
       expect(isProviderEnabled(provider), provider).toBe(false);
     }
     process.env.NEXT_PUBLIC_NB_KIE_ONLY = "0";

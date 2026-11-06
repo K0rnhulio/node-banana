@@ -26,7 +26,7 @@ COMFY_API_KEY=your_comfy_api_key    # Optional, for ComfyUI-hosted models via Co
 
 ## Kie-only mode
 
-This fork runs every model through one Kie.ai key (`src/lib/providers/kieOnly.ts`). It is on by default: Settings offers only the Kie key, `/api/models` lists only Kie models, the LLM node offers only Kie.ai chat models, new nodes default to Kie models, the 3D and ComfyUI app nodes are left out of the add menus and shortcuts, and `/api/generate` and `/api/llm` refuse other providers. The other providers' code stays in place; `NEXT_PUBLIC_NB_KIE_ONLY=0` in `.env.local` (then rebuild) brings them all back. The test suite runs with it off (`src/test/setup.ts`); `src/lib/providers/__tests__/kieOnly.test.ts` covers it on.
+This fork runs every model through one Kie.ai key (`src/lib/providers/kieOnly.ts`). It is on by default: Settings offers only the Kie and Anthropic keys, `/api/models` lists only Kie models, the LLM node offers Kie.ai chat models and Claude directly (Anthropic, the default for new LLM nodes), new image nodes default to Kie models, the 3D and ComfyUI app nodes are left out of the add menus and shortcuts, and `/api/generate` and `/api/llm` refuse other providers. The other providers' code stays in place; `NEXT_PUBLIC_NB_KIE_ONLY=0` in `.env.local` (then rebuild) brings them all back. The test suite runs with it off (`src/test/setup.ts`); `src/lib/providers/__tests__/kieOnly.test.ts` covers it on.
 
 ## Architecture Overview
 
