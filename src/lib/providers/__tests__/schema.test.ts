@@ -70,6 +70,17 @@ describe("getModelSchema", () => {
       expect(result.inputs).toContainEqual({ name: "image_urls", type: "image", required: true, label: "Image", isArray: true });
     });
 
+    it("serves Seedream 5.5 with Kie's own ratios and size tiers", async () => {
+      const t2i = expectOk(await getModelSchema("kie", "seedream/5-5-text-to-image", {}));
+      expect(t2i.parameters.map((p) => p.name)).toEqual(["aspect_ratio", "size", "output_format", "background"]);
+      expect(t2i.parameters.find((p) => p.name === "aspect_ratio")?.enum).toEqual(["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"]);
+      expect(t2i.parameters.find((p) => p.name === "size")?.enum).toEqual(["1K", "1.5K", "2K"]);
+
+      const edit = expectOk(await getModelSchema("kie", "seedream/5-5-image-to-image", {}));
+      expect(edit.parameters.find((p) => p.name === "aspect_ratio")?.default).toBe("auto");
+      expect(edit.inputs).toContainEqual({ name: "image_urls", type: "image", required: true, label: "Image", isArray: true });
+    });
+
     it("serves a Comfy Router model's settings from its published schema", async () => {
       primeRouterSchema("bfl/flux-2-pro", {
         paths: {
