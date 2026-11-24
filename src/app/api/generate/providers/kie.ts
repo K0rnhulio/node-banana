@@ -86,6 +86,18 @@ export function getKieModelDefaults(modelId: string): Record<string, unknown> {
         num_images: 1,
       };
 
+    // Seedream 5.5 models (aspect_ratio is required for text-to-image)
+    case "seedream/5-5-text-to-image":
+      return {
+        aspect_ratio: "1:1",
+        size: "2K",
+      };
+    case "seedream/5-5-image-to-image":
+      return {
+        aspect_ratio: "auto",
+        size: "2K",
+      };
+
     // Seedream 5.0 Lite models
     case "seedream/5-lite-text-to-image":
     case "seedream/5-lite-image-to-image":

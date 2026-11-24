@@ -859,6 +859,27 @@ function getKieSchema(modelId: string): ExtractedSchema {
       ],
       inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
     },
+    "seedream/5-5-text-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio (21:9 is the widest Kie offers)", enum: ["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"], default: "1:1" },
+        { name: "size", type: "string", description: "Resolution tier (affects cost)", enum: ["1K", "1.5K", "2K"], default: "2K" },
+        { name: "output_format", type: "string", description: "Output file format", enum: ["png", "jpeg"], default: "png" },
+        { name: "background", type: "string", description: "Background (transparent needs PNG)", enum: ["auto", "transparent", "opaque"], default: "auto" },
+      ],
+      inputs: [{ name: "prompt", type: "text", required: true, label: "Prompt" }],
+    },
+    "seedream/5-5-image-to-image": {
+      parameters: [
+        { name: "aspect_ratio", type: "string", description: "Output aspect ratio (auto follows the input; 21:9 is the widest Kie offers)", enum: ["auto", "1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"], default: "auto" },
+        { name: "size", type: "string", description: "Resolution tier (affects cost)", enum: ["1K", "1.5K", "2K"], default: "2K" },
+        { name: "output_format", type: "string", description: "Output file format", enum: ["png", "jpeg"], default: "png" },
+        { name: "background", type: "string", description: "Background (transparent needs PNG)", enum: ["auto", "transparent", "opaque"], default: "auto" },
+      ],
+      inputs: [
+        { name: "prompt", type: "text", required: true, label: "Prompt" },
+        { name: "image_urls", type: "image", required: true, label: "Image", isArray: true },
+      ],
+    },
     "seedream/5-lite-text-to-image": {
       parameters: [
         { name: "aspect_ratio", type: "string", description: "Output aspect ratio", enum: ["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"], default: "1:1" },
